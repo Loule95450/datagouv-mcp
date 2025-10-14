@@ -1,0 +1,20 @@
+[project]
+name = "datagouv-mcp"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    {name = "data.gouv.fr", email = "opendatateam@data.gouv.fr"}
+]
+readme = "README.md"
+requires-python = ">=3.13,<3.15"
+dependencies = [
+    "fastmcp>=2.12.4",
+    "httpx>=0.28.1",
+    "mcp[cli]>=1.17.0",
+]
+
+[dependency-groups]
+dev = [
+    "dotenv>=0.9.9",
+    "ruff>=0.14.0",
+]
