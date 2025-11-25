@@ -1,8 +1,11 @@
+import logging
 from typing import Any
 
 import aiohttp
 
 from helpers import datagouv_api_client
+
+logger = logging.getLogger(__name__)
 
 
 class ResourceNotAvailableError(Exception):
@@ -29,7 +32,6 @@ async def fetch_resource_data(
     """
     Fetch data for a resource via the Tabular API.
     """
-
     sess, owns_session = await _get_session(session)
     try:
         base_url = datagouv_api_client.tabular_api_base_url()
@@ -41,13 +43,28 @@ async def fetch_resource_data(
         if params:
             query_params.update(params)
 
+        full_url = f"{url}?{'&'.join(f'{k}={v}' for k, v in query_params.items())}"
+        logger.info(
+            f"Tabular API: Fetching resource data - URL: {full_url}, "
+            f"resource_id: {resource_id}"
+        )
+
         async with sess.get(
             url, params=query_params, timeout=aiohttp.ClientTimeout(total=30)
         ) as resp:
             if resp.status == 404:
+                logger.warning(f"Tabular API: Resource {resource_id} not found (404)")
                 raise ResourceNotAvailableError(
                     f"Resource {resource_id} not available via Tabular API"
                 )
+
+            if resp.status >= 400:
+                error_body = await resp.text()
+                logger.error(
+                    f"Tabular API: Error {resp.status} for resource {resource_id} - "
+                    f"Response: {error_body[:500]}"
+                )
+
             resp.raise_for_status()
             return await resp.json()
     finally:
@@ -68,11 +85,27 @@ async def fetch_resource_profile(
     try:
         base_url = datagouv_api_client.tabular_api_base_url()
         url = f"{base_url}resources/{resource_id}/profile/"
+        logger.debug(
+            f"Tabular API: Fetching resource profile - URL: {url}, "
+            f"resource_id: {resource_id}"
+        )
+
         async with sess.get(url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
             if resp.status == 404:
+                logger.warning(
+                    f"Tabular API: Resource profile {resource_id} not found (404)"
+                )
                 raise ResourceNotAvailableError(
                     f"Resource {resource_id} profile not available via Tabular API"
                 )
+
+            if resp.status >= 400:
+                error_body = await resp.text()
+                logger.error(
+                    f"Tabular API: Profile error {resp.status} for resource {resource_id} - "
+                    f"Response: {error_body[:500]}"
+                )
+
             resp.raise_for_status()
             return await resp.json()
     finally:
