@@ -2,16 +2,12 @@ Model Context Protocol (MCP) for interacting with data.gouv.fr datasets and reso
 
 ## Setup and Configuration
 
-1. **Start the real Hydra CSV database locally**
-
-  Make sure the Hydra CSV database is running on your machine. Follow the [Hydra repository](https://github.com/datagouv/hydra) instructions so the database is accessible on `localhost:5434`. The MCP server relies on these tables for some workflows.
-
-2. **Install dependencies**
+1. **Install dependencies**
   ```bash
   uv sync
   ```
 
-3. **Prepare the environment file**
+2. **Prepare the environment file**
 
   Copy the example environment file to create your own `.env` file:
   ```bash
@@ -23,30 +19,17 @@ Model Context Protocol (MCP) for interacting with data.gouv.fr datasets and reso
   MCP_PORT=8007
   # Allowed values: demo | prod (defaults to demo when unset)
   DATAGOUV_API_ENV=demo
-  # Optional overrides if Hydra/Postgres is not running locally
-  HYDRA_DB_HOST=127.0.0.1
-  HYDRA_DB_PORT=5434
-  HYDRA_DB_USER=postgres
-  HYDRA_DB_PASSWORD=postgres
-  HYDRA_DB_NAME=postgres
   ```
 
   - `MCP_PORT`: port for the FastMCP HTTP server (defaults to `8000` when unset).
-  - `DATAGOUV_API_ENV`: `demo` (default) or `prod`. This controls which data.gouv.fr API/website the helpers call and the URLs returned by the tools.
-  - `HYDRA_DB_HOST`: hostname for the Hydra CSV Postgres database (defaults to `127.0.0.1`).
-  - `HYDRA_DB_PORT`: port for the Hydra CSV Postgres database (defaults to `5434`).
-  - `HYDRA_DB_USER`: username for the Hydra CSV Postgres database (defaults to `postgres`).
-  - `HYDRA_DB_PASSWORD`: password for the Hydra CSV Postgres database (defaults to `postgres`).
-  - `HYDRA_DB_NAME`: database name for the Hydra CSV Postgres database (defaults to `postgres`).
-
-  The `HYDRA_DB_*` variables configure connection settings for the Hydra CSV Postgres database (used by helpers that need direct SQL access). Defaults target the local Docker compose stack.
+  - `DATAGOUV_API_ENV`: `demo` (default) or `prod`. This controls which data.gouv.fr API/website the helpers call and automatically picks the appropriate Tabular API endpoint (`https://tabular-api.preprod.data.gouv.fr/api/` for demo, `https://tabular-api.data.gouv.fr/api/` for prod).
 
   Load the variables with your preferred method, e.g.:
   ```bash
   set -a && source .env && set +a
   ```
 
-1. **Start the HTTP MCP server**
+3. **Start the HTTP MCP server**
    ```bash
    uv run main.py
    ```
@@ -168,7 +151,8 @@ Add the following to your `~/.codeium/mcp_config.json`:
 - Replace `your-data-gouv-api-key-here` with your actual API key from [data.gouv.fr account settings](https://www.data.gouv.fr/fr/account/).
 - The API key is only required for tools that create or modify datasets/resources. Read-only operations (like `search_datasets`) work without an API key.
 - For Cursor, use the `API_KEY` header name. For other clients, you can use either `Authorization: Bearer <token>` or `API_KEY: <token>` format.
-- If you move the Hydra CSV/Postgres database elsewhere, update the `HYDRA_DB_*` variables so the helper connects to the correct host.
+
+The MCP server relies on the official data.gouv.fr APIs (dataset API + Tabular API) and therefore does **not** require any local Postgres/Hydra instance.
 
 ## 🧭 Test with MCP Inspector
 
@@ -218,7 +202,7 @@ The MCP server provides tools to interact with data.gouv.fr datasets:
   - `private` (optional, default: False): If True, create as draft (private). Default: False (public)
   - `api_key` (optional): API key forwarded by the MCP client (required for creating datasets)
 
-- **`query_dataset_data`** - Query data from a dataset by exploring its resources stored in the Hydra CSV database. This tool finds a dataset (by ID or by searching), retrieves its resources, and explores the corresponding tables in the Hydra database to answer questions about the data.
+- **`query_dataset_data`** - Query data from a dataset by exploring its resources via the data.gouv.fr Tabular API. This tool finds a dataset (by ID or by searching), retrieves its resources, and fetches rows directly from the Tabular API to answer questions about the data (no local database required).
 
   Parameters:
   - `question` (required): The question or description of what data you're looking for
@@ -226,7 +210,7 @@ The MCP server provides tools to interact with data.gouv.fr datasets:
   - `dataset_query` (optional): Search query to find the dataset if `dataset_id` is not provided
   - `limit_per_resource` (optional, default: 100): Maximum number of rows to retrieve per resource table
 
-  Note: Either `dataset_id` or `dataset_query` must be provided. The tool requires the Hydra CSV database to be running and accessible (configured via `HYDRA_DB_*` environment variables).
+  Note: Either `dataset_id` or `dataset_query` must be provided. Data availability depends on whether the resource is ingested in the Tabular API (CSV/XLS resources within the documented size limits).
 
 ## 🤝 Contributing
 
@@ -256,4 +240,21 @@ The pre-commit hook that automatically:
 
 ## 🧪 Tests
 
-TODO
+Run tests with pytest:
+
+```bash
+# Run all tests
+uv run pytest
+
+# Run with verbose output
+uv run pytest -v
+
+# Run specific test file
+uv run pytest tests/test_tabular_api.py
+
+# Run with custom resource ID
+RESOURCE_ID=3b6b2281-b9d9-4959-ae9d-c2c166dff118 uv run pytest tests/test_tabular_api.py
+
+# Run with prod environment
+DATAGOUV_API_ENV=prod uv run pytest
+```

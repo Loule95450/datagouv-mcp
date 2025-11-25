@@ -1,9 +1,11 @@
 import os
 import sys
+
 import aiohttp
 import uvicorn
 from mcp.server.fastmcp import FastMCP
-from helpers import datagouv_api_client, hydra_db
+
+from helpers import datagouv_api_client, tabular_api_client
 
 mcp = FastMCP("data.gouv.fr MCP server")
 
@@ -165,10 +167,10 @@ async def query_dataset_data(
     limit_per_resource: int = 100,
 ) -> str:
     """
-    Query data from a dataset by exploring its resources stored in the Hydra CSV database.
+    Query data from a dataset by exploring its resources via the Tabular API.
 
-    This tool finds a dataset (by ID or by searching), retrieves its resources, and explores
-    the corresponding tables in the Hydra database to answer questions about the data.
+    This tool finds a dataset (by ID or by searching), retrieves its resources, and uses
+    the data.gouv.fr Tabular API to access tabular content directly (no local database required).
 
     Args:
         question: The question or description of what data you're looking for
@@ -226,40 +228,39 @@ async def query_dataset_data(
             f"Found {len(resources)} resource(s) to explore\n",
         ]
 
-        # Step 3 & 4: For each resource, find table and explore data
+        # Step 3 & 4: For each resource, fetch data via the Tabular API
         found_data = False
         for resource_id, resource_title in resources:
             content_parts.append(
                 f"--- Resource: {resource_title or 'Untitled'} (ID: {resource_id}) ---"
             )
 
-            # Get table name for this resource
-            table_name = await hydra_db.get_table_name_for_resource(resource_id)
-            if not table_name:
-                content_parts.append(
-                    "  ⚠️  No table found in Hydra database for this resource"
-                )
-                content_parts.append("")
-                continue
-
-            content_parts.append(f"  Table: {table_name}")
-
-            # Explore the table
             try:
-                table_data = await hydra_db.explore_table(
-                    table_name, limit=limit_per_resource, offset=0
+                page_size = max(1, min(limit_per_resource, 1000))
+                tabular_data = await tabular_api_client.fetch_resource_data(
+                    resource_id, page=1, page_size=page_size
                 )
-                rows = table_data.get("rows", [])
-                total_count = table_data.get("count", 0)
+                rows = tabular_data.get("data", [])
+                meta = tabular_data.get("meta", {})
+                total_count = meta.get("total")
+                page_info = meta.get("page")
+                page_size_meta = meta.get("page_size")
 
                 if not rows:
-                    content_parts.append("  ⚠️  Table is empty")
+                    content_parts.append(
+                        "  ⚠️  No rows available (resource may be empty or filtered)."
+                    )
                     content_parts.append("")
                     continue
 
                 found_data = True
-                content_parts.append(f"  Total rows in table: {total_count}")
+                if total_count is not None:
+                    content_parts.append(f"  Total rows (Tabular API): {total_count}")
                 content_parts.append(f"  Retrieved: {len(rows)} row(s)")
+                if page_info is not None and page_size_meta is not None:
+                    content_parts.append(
+                        f"  Page info: page {page_info} (page size {page_size_meta})"
+                    )
 
                 # Show column names
                 if rows:
@@ -282,6 +283,18 @@ async def query_dataset_data(
                         f"    ... ({len(rows) - 3} more row(s) available)"
                     )
 
+                links = tabular_data.get("links", {})
+                if links.get("next"):
+                    content_parts.append(
+                        "  More data available via Tabular API (next page link provided)."
+                    )
+
+            except tabular_api_client.ResourceNotAvailableError as e:
+                content_parts.append(f"  ⚠️  {str(e)}")
+            except aiohttp.ClientResponseError as e:
+                content_parts.append(
+                    f"  ❌ Tabular API error (HTTP {e.status}): {e.message}"
+                )
             except Exception as e:
                 content_parts.append(f"  ❌ Error exploring table: {str(e)}")
 

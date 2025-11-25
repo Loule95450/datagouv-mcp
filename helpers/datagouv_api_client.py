@@ -7,10 +7,12 @@ _ENV_TARGETS = {
     "demo": {
         "api": "https://demo.data.gouv.fr/api/",
         "site": "https://demo.data.gouv.fr/",
+        "tabular_api": "https://tabular-api.preprod.data.gouv.fr/api/",
     },
     "prod": {
         "api": "https://www.data.gouv.fr/api/",
         "site": "https://www.data.gouv.fr/",
+        "tabular_api": "https://tabular-api.data.gouv.fr/api/",
     },
 }
 
@@ -45,6 +47,14 @@ def frontend_base_url() -> str:
     """
     env_name = get_current_environment()
     return _ENV_TARGETS[env_name]["site"]
+
+
+def tabular_api_base_url() -> str:
+    """
+    Return the Tabular API base URL matching the current environment.
+    """
+    env_name = get_current_environment()
+    return _ENV_TARGETS[env_name]["tabular_api"]
 
 
 def _base_url() -> str:
