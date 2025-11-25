@@ -190,37 +190,41 @@ This MCP server uses FastMCP and implements the **Streamable HTTP transport only
 
 The MCP server provides tools to interact with data.gouv.fr datasets:
 
-- **`search_datasets`** - Search for datasets on data.gouv.fr by keywords. Returns a list of datasets matching the search query with their metadata, including title, description, organization, tags, and resource count. Use this to discover datasets before querying their data.
+- **`search_datasets`** - Search for datasets by keywords. Returns datasets with metadata (title, description, organization, tags, resource count).
 
-  Parameters:
-  - `query` (required): Search query string (searches in title, description, tags)
-  - `page` (optional, default: 1): Page number
-  - `page_size` (optional, default: 20, max: 100): Number of results per page
+  Parameters: `query` (required), `page` (optional, default: 1), `page_size` (optional, default: 20, max: 100)
 
-- **`create_dataset`** - Create a new dataset on data.gouv.fr. Requires a data.gouv.fr API key supplied by the MCP client via the `api_key` parameter. Configure your MCP client to pass the key automatically (e.g., Cursor's `config.apiKey`). By default, datasets created via the API are public. Set `private=True` to create a draft.
+- **`create_dataset`** - Create a new dataset. Requires an API key via the `api_key` parameter.
 
-  Parameters:
-  - `title` (required): Dataset title
-  - `description` (required): Dataset description
-  - `organization` (optional): Optional organization ID or slug
-  - `private` (optional, default: False): If True, create as draft (private). Default: False (public)
-  - `api_key` (optional): API key forwarded by the MCP client (required for creating datasets)
+  Parameters: `title` (required), `description` (required), `organization` (optional), `private` (optional, default: False), `api_key` (required)
 
-- **`query_dataset_data`** - Query data from a dataset by exploring its resources via the data.gouv.fr Tabular API. This tool finds a dataset (by ID or by searching), retrieves its resources, and fetches rows directly from the Tabular API to answer questions about the data (no local database required).
+- **`get_dataset_info`** - Get detailed information about a specific dataset (metadata, organization, tags, dates, license, etc.).
 
-  Parameters:
-  - `question` (required): The question or description of what data you're looking for
-  - `dataset_id` (optional): Dataset ID if you already know which dataset to query
-  - `dataset_query` (optional): Search query to find the dataset if `dataset_id` is not provided
-  - `limit_per_resource` (optional, default: 100): Maximum number of rows to retrieve per resource table
+  Parameters: `dataset_id` (required)
 
-  Note: Either `dataset_id` or `dataset_query` must be provided. Data availability depends on whether the resource is ingested in the Tabular API (CSV/XLS resources within the documented size limits).
+- **`list_dataset_resources`** - List all resources (files) in a dataset with their metadata (format, size, type, URL).
+
+  Parameters: `dataset_id` (required)
+
+- **`get_resource_info`** - Get detailed information about a specific resource (format, size, MIME type, URL, dataset association, Tabular API availability).
+
+  Parameters: `resource_id` (required)
+
+- **`query_dataset_data`** - Query data from a dataset via the Tabular API. Finds a dataset, retrieves its resources, and fetches rows to answer questions.
+
+  Parameters: `question` (required), `dataset_id` (optional), `dataset_query` (optional), `limit_per_resource` (optional, default: 100)
+
+  Note: Either `dataset_id` or `dataset_query` must be provided. Works for CSV/XLS resources within Tabular API size limits (CSV ≤ 100 MB, XLSX ≤ 12.5 MB).
+
+- **`download_and_parse_resource`** - Download and parse a resource that is not accessible via Tabular API (files too large, formats not supported, external URLs).
+
+  Parameters: `resource_id` (required), `max_rows` (optional, default: 1000), `max_size_mb` (optional, default: 500)
+
+  Supported formats: CSV, CSV.GZ, JSON, JSONL. Useful for files exceeding Tabular API limits or formats not supported by Tabular API.
 
 ## 🧪 Tests
 
-1. Tests in `test_mcp_server.py` require the MCP server to be running. Start it in another terminal with `uv run python main.py` or `docker-compose up -d` before running these tests.
-
-2. Then run the tests with pytest:
+Run the tests with pytest:
 
 ```bash
 # Run all tests
