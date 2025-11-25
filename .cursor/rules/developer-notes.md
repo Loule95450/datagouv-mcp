@@ -15,7 +15,7 @@ This file contains implementation details that future contributors (human or LLM
 ## Configuration
 
 - `DATAGOUV_API_ENV` selects the target platform (`demo` by default, `prod` when exposing real data). The helpers derive both API and public-site URLs from this variable.
-- `MCP_PORT` is required at launch. Example: `MCP_PORT=8007 uv run main.py`.
+- `MCP_PORT` defaults to 8000 if not set. Example: `MCP_PORT=8007 uv run main.py` to use a custom port.
 - A `.env.example` template exists so you can `cp .env.example .env` and tweak values locally (including Hydra/PostgREST settings if needed).
 
 ## datagouv_api_client helpers
