@@ -7,7 +7,8 @@ This file contains implementation details that future contributors (human or LLM
 ```
 ├─ main.py                # FastMCP entry point, tool/resource definitions
 └─ helpers/
-   └─ datagouv_api_client.py   # HTTP client helper functions
+   ├─ datagouv_api_client.py   # HTTP client helper functions (data.gouv API)
+   └─ hydra_db.py              # Async psycopg helper for the Hydra/Postgres CSV DB
 ```
 
 `.cursor/rules/` (this folder) should stay with the code when migrating to a dedicated repo.
@@ -16,6 +17,7 @@ This file contains implementation details that future contributors (human or LLM
 
 - `DATAGOUV_API_ENV` selects the target platform (`demo` by default, `prod` when exposing real data). The helpers derive both API and public-site URLs from this variable.
 - `MCP_PORT` defaults to 8000 if not set. Example: `MCP_PORT=8007 uv run main.py` to use a custom port.
+- `HYDRA_DB_HOST/PORT/USER/PASSWORD/NAME` control how `helpers/hydra_db.py` connects to the Hydra CSV Postgres database (defaults match the local Docker compose stack at `127.0.0.1:5434`, user/password `postgres`).
 - A `.env.example` template exists so you can `cp .env.example .env` and tweak values locally (including Hydra/PostgREST settings if needed).
 
 ## datagouv_api_client helpers

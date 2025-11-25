@@ -1,4 +1,4 @@
- Model Context Protocol (MCP) for interacting with data.gouv.fr datasets and resources with LLM chatbots, built using the [the official Python SDK for MCP servers and clients](https://github.com/modelcontextprotocol/python-sdk) and the Streamable HTTP transport protocol.
+Model Context Protocol (MCP) for interacting with data.gouv.fr datasets and resources with LLM chatbots, built using the [the official Python SDK for MCP servers and clients](https://github.com/modelcontextprotocol/python-sdk) and the Streamable HTTP transport protocol.
 
 ## Setup and Configuration
 
@@ -23,10 +23,17 @@
   MCP_PORT=8007
   # Allowed values: demo | prod (defaults to demo when unset)
   DATAGOUV_API_ENV=demo
+  # Optional overrides if Hydra/Postgres is not running locally
+  HYDRA_DB_HOST=127.0.0.1
+  HYDRA_DB_PORT=5434
+  HYDRA_DB_USER=postgres
+  HYDRA_DB_PASSWORD=postgres
+  HYDRA_DB_NAME=postgres
   ```
 
   - `MCP_PORT`: port for the FastMCP HTTP server (defaults to `8000` when unset).
   - `DATAGOUV_API_ENV`: `demo` (default) or `prod`. This controls which data.gouv.fr API/website the helpers call and the URLs returned by the tools.
+  - `HYDRA_DB_*`: connection settings for the Hydra CSV Postgres database (used by helpers that need direct SQL access). Defaults target the local Docker compose stack.
 
   Load the variables with your preferred method, e.g.:
   ```bash
@@ -155,6 +162,7 @@ Add the following to your `~/.codeium/mcp_config.json`:
 - Replace `your-data-gouv-api-key-here` with your actual API key from [data.gouv.fr account settings](https://www.data.gouv.fr/fr/account/).
 - The API key is only required for tools that create or modify datasets/resources. Read-only operations (like `search_datasets`) work without an API key.
 - For Cursor, use the `API_KEY` header name. For other clients, you can use either `Authorization: Bearer <token>` or `API_KEY: <token>` format.
+- If you move the Hydra CSV/Postgres database elsewhere, update the `HYDRA_DB_*` variables so the helper connects to the correct host.
 
 ## 🧭 Test with MCP Inspector
 
