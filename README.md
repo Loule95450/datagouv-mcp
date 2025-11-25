@@ -38,7 +38,7 @@ Model Context Protocol (MCP) for interacting with data.gouv.fr datasets and reso
   - `HYDRA_DB_USER`: username for the Hydra CSV Postgres database (defaults to `postgres`).
   - `HYDRA_DB_PASSWORD`: password for the Hydra CSV Postgres database (defaults to `postgres`).
   - `HYDRA_DB_NAME`: database name for the Hydra CSV Postgres database (defaults to `postgres`).
-  
+
   The `HYDRA_DB_*` variables configure connection settings for the Hydra CSV Postgres database (used by helpers that need direct SQL access). Defaults target the local Docker compose stack.
 
   Load the variables with your preferred method, e.g.:
@@ -227,6 +227,32 @@ The MCP server provides tools to interact with data.gouv.fr datasets:
   - `limit_per_resource` (optional, default: 100): Maximum number of rows to retrieve per resource table
 
   Note: Either `dataset_id` or `dataset_query` must be provided. The tool requires the Hydra CSV database to be running and accessible (configured via `HYDRA_DB_*` environment variables).
+
+## 🤝 Contributing
+
+### 🧹 Code Linting and Formatting
+
+This project follows PEP 8 style guidelines using [Ruff](https://astral.sh/ruff/) for linting and formatting. **Either running these commands manually or installing the pre-commit hook is required before submitting contributions.**
+
+```shell
+# Lint and sort imports, and format code
+uv run ruff check  --select I --fix && uv run ruff format
+```
+
+### 🔗 Pre-commit Hooks
+
+This repository uses a [pre-commit](https://pre-commit.com/) hook which lint and format code before each commit. **Installing the pre-commit hook is required for contributions.**
+
+**Install pre-commit hooks:**
+```shell
+uv run pre-commit install
+```
+The pre-commit hook that automatically:
+- Check YAML syntax
+- Fix end-of-file issues
+- Remove trailing whitespace
+- Check for large files
+- Run Ruff linting and formatting
 
 ## 🧪 Tests
 
