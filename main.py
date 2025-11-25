@@ -1,11 +1,10 @@
 import os
-
+import sys
 import aiohttp
+import uvicorn
 from mcp.server.fastmcp import FastMCP
-
 from helpers import datagouv_api_client
 
-# Create an MCP server
 mcp = FastMCP("data.gouv.fr MCP server")
 
 
@@ -287,10 +286,6 @@ async def get_resource_resource(resource_id: str) -> str:
 
 # Run with streamable HTTP transport
 if __name__ == "__main__":
-    import os
-    import sys
-
-    # Get port from environment variable; default to 8000 for local dev
     port_str = os.getenv("MCP_PORT", "8000")
     try:
         port = int(port_str)
@@ -300,8 +295,4 @@ if __name__ == "__main__":
             file=sys.stderr,
         )
         sys.exit(1)
-
-    # Use uvicorn to run the Starlette app with custom port
-    import uvicorn
-
     uvicorn.run(mcp.streamable_http_app(), host="0.0.0.0", port=port, log_level="info")

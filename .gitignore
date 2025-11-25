@@ -67,7 +67,6 @@ coverage.xml
 
 # IDEs
 .vscode
-.cursor
 .idea
 .mr.developer.cfg
 .project
