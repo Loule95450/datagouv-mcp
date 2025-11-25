@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -6,6 +7,17 @@ import uvicorn
 from mcp.server.fastmcp import FastMCP
 
 from helpers import datagouv_api_client, tabular_api_client
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+# Ensure helpers loggers are also at DEBUG level
+logging.getLogger("helpers.tabular_api_client").setLevel(logging.DEBUG)
+logging.getLogger("helpers.datagouv_api_client").setLevel(logging.DEBUG)
 
 mcp = FastMCP("data.gouv.fr MCP server")
 
@@ -170,7 +182,7 @@ async def query_dataset_data(
     Query data from a dataset by exploring its resources via the Tabular API.
 
     This tool finds a dataset (by ID or by searching), retrieves its resources, and uses
-    the data.gouv.fr Tabular API to access tabular content directly (no local database required).
+    the data.gouv.fr Tabular API to access tabular content.
 
     Args:
         question: The question or description of what data you're looking for
@@ -236,7 +248,12 @@ async def query_dataset_data(
             )
 
             try:
-                page_size = max(1, min(limit_per_resource, 1000))
+                # Tabular API has a maximum page_size of 200
+                page_size = max(1, min(limit_per_resource, 200))
+                logger.info(
+                    f"Querying Tabular API for resource: {resource_title} "
+                    f"(ID: {resource_id}), page_size: {page_size}"
+                )
                 tabular_data = await tabular_api_client.fetch_resource_data(
                     resource_id, page=1, page_size=page_size
                 )
@@ -267,6 +284,10 @@ async def query_dataset_data(
                     columns = list(rows[0].keys())
                     content_parts.append(f"  Columns: {', '.join(columns)}")
 
+                if not rows:
+                    content_parts.append("")
+                    continue
+
                 # Show sample data (first few rows)
                 content_parts.append("\n  Sample data (first 3 rows):")
                 for i, row in enumerate(rows[:3], 1):
@@ -290,12 +311,19 @@ async def query_dataset_data(
                     )
 
             except tabular_api_client.ResourceNotAvailableError as e:
+                logger.warning(f"Resource not available: {resource_id} - {str(e)}")
                 content_parts.append(f"  ⚠️  {str(e)}")
             except aiohttp.ClientResponseError as e:
-                content_parts.append(
-                    f"  ❌ Tabular API error (HTTP {e.status}): {e.message}"
+                error_details = f"HTTP {e.status}: {e.message}"
+                if hasattr(e, "request_info") and e.request_info:
+                    error_details += f" - URL: {e.request_info.url}"
+                logger.error(
+                    f"Tabular API HTTP error for resource {resource_id}: {error_details}"
                 )
+
+                content_parts.append(f"  ❌ Tabular API error ({error_details})")
             except Exception as e:
+                logger.exception(f"Unexpected error exploring resource {resource_id}")
                 content_parts.append(f"  ❌ Error exploring table: {str(e)}")
 
             content_parts.append("")
