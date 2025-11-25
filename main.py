@@ -3,7 +3,7 @@ import sys
 import aiohttp
 import uvicorn
 from mcp.server.fastmcp import FastMCP
-from helpers import datagouv_api_client
+from helpers import datagouv_api_client, hydra_db
 
 mcp = FastMCP("data.gouv.fr MCP server")
 
@@ -157,131 +157,147 @@ async def create_dataset(
         return f"Error: Failed to create dataset. {str(e)}"
 
 
-@mcp.resource(
-    "datagouv://resources",
-    name="Available Resources",
-    title="Available Resource Templates",
-    description="List of available resource URI templates for accessing data.gouv.fr datasets and resources",
-)
-def list_available_resources() -> str:
+@mcp.tool()
+async def query_dataset_data(
+    question: str,
+    dataset_id: str | None = None,
+    dataset_query: str | None = None,
+    limit_per_resource: int = 100,
+) -> str:
     """
-    List available resource templates on data.gouv.fr.
+    Query data from a dataset by exploring its resources stored in the Hydra CSV database.
 
-    This resource provides information about the available resource URI templates
-    that can be used to access datasets and resources on data.gouv.fr.
-    """
-    return """Available resource templates:
-
-1. datagouv://dataset/{dataset_id}
-   Get dataset metadata and list all its resources.
-   Example: datagouv://dataset/53ba5b91a3a729219b7beae9
-
-2. datagouv://resource/{resource_id}
-   Get resource metadata including its dataset information.
-   Example: datagouv://resource/580f2c63-8d22-490a-9ad3-eaef71edcae3
-
-Workflow:
-1. Use search_datasets tool to find datasets
-2. Use datagouv://dataset/{dataset_id} to explore a dataset's resources
-3. Use datagouv://resource/{resource_id} to get details about a specific resource
-"""
-
-
-@mcp.resource(
-    "datagouv://dataset/{dataset_id}",
-    name="Dataset Resource",
-    title="Dataset Metadata and Resources",
-    description="Get dataset metadata and list all its resources. Use after finding a dataset with search_datasets.",
-)
-async def get_dataset_resource(dataset_id: str) -> str:
-    """
-    Get dataset metadata and list all its resources.
-
-    This resource provides information about a specific dataset on data.gouv.fr,
-    including its title, description, and all available resources with their IDs and titles.
-    Use this after finding a dataset with search_datasets to explore its resources.
+    This tool finds a dataset (by ID or by searching), retrieves its resources, and explores
+    the corresponding tables in the Hydra database to answer questions about the data.
 
     Args:
-        dataset_id: The ID of the dataset to retrieve
+        question: The question or description of what data you're looking for
+        dataset_id: Optional dataset ID if you already know which dataset to query
+        dataset_query: Optional search query to find the dataset if dataset_id is not provided
+        limit_per_resource: Maximum number of rows to retrieve per resource table (default: 100)
+
+    Returns:
+        Formatted text with the data found, organized by resource
     """
-    result = await datagouv_api_client.get_resources_for_dataset(dataset_id)
+    try:
+        # Step 1: Find the dataset
+        if dataset_id:
+            # Use provided dataset ID
+            dataset_result = await datagouv_api_client.get_resources_for_dataset(
+                dataset_id
+            )
+            dataset = dataset_result.get("dataset", {})
+            if not dataset.get("id"):
+                return f"Error: Dataset with ID '{dataset_id}' not found."
+        elif dataset_query:
+            # Search for dataset
+            search_result = await datagouv_api_client.search_datasets(
+                query=dataset_query, page=1, page_size=1
+            )
+            datasets = search_result.get("data", [])
+            if not datasets:
+                return f"Error: No dataset found for query '{dataset_query}'."
+            dataset_id = datasets[0].get("id")
+            dataset_result = await datagouv_api_client.get_resources_for_dataset(
+                dataset_id
+            )
+            dataset = dataset_result.get("dataset", {})
+        else:
+            return (
+                "Error: Either 'dataset_id' or 'dataset_query' must be provided.\n"
+                "Use dataset_id if you know the exact dataset ID, or dataset_query to search for a dataset."
+            )
 
-    dataset = result.get("dataset", {})
-    resources = result.get("resources", [])
+        dataset_title = dataset.get("title", "Unknown")
+        dataset_id = dataset.get("id", dataset_id)
 
-    content_parts = [
-        f"Dataset: {dataset.get('title', 'Untitled')}",
-        f"ID: {dataset.get('id')}",
-        "",
-    ]
+        # Step 2: Get resources for the dataset
+        resources = dataset_result.get("resources", [])
+        if not resources:
+            return (
+                f"Dataset '{dataset_title}' (ID: {dataset_id}) has no resources.\n"
+                "No data tables are available to explore."
+            )
 
-    if dataset.get("description_short"):
-        content_parts.append(f"Description: {dataset.get('description_short')}")
-        content_parts.append("")
+        content_parts = [
+            f"Exploring dataset: {dataset_title}",
+            f"Dataset ID: {dataset_id}",
+            f"Question: {question}",
+            f"Found {len(resources)} resource(s) to explore\n",
+        ]
 
-    if dataset.get("description"):
-        desc = dataset.get("description", "")[:500]
-        content_parts.append(f"Full description: {desc}...")
-        content_parts.append("")
+        # Step 3 & 4: For each resource, find table and explore data
+        found_data = False
+        for resource_id, resource_title in resources:
+            content_parts.append(
+                f"--- Resource: {resource_title or 'Untitled'} (ID: {resource_id}) ---"
+            )
 
-    content_parts.append(f"Resources ({len(resources)}):")
-    content_parts.append("")
+            # Get table name for this resource
+            table_name = await hydra_db.get_table_name_for_resource(resource_id)
+            if not table_name:
+                content_parts.append(
+                    "  ⚠️  No table found in Hydra database for this resource"
+                )
+                content_parts.append("")
+                continue
 
-    if not resources:
-        content_parts.append("  No resources available for this dataset.")
-    else:
-        for i, (res_id, res_title) in enumerate(resources, 1):
-            content_parts.append(f"  {i}. {res_title or 'Untitled'}")
-            content_parts.append(f"     Resource ID: {res_id}")
-            content_parts.append(f"     URI: datagouv://resource/{res_id}")
+            content_parts.append(f"  Table: {table_name}")
+
+            # Explore the table
+            try:
+                table_data = await hydra_db.explore_table(
+                    table_name, limit=limit_per_resource, offset=0
+                )
+                rows = table_data.get("rows", [])
+                total_count = table_data.get("count", 0)
+
+                if not rows:
+                    content_parts.append("  ⚠️  Table is empty")
+                    content_parts.append("")
+                    continue
+
+                found_data = True
+                content_parts.append(f"  Total rows in table: {total_count}")
+                content_parts.append(f"  Retrieved: {len(rows)} row(s)")
+
+                # Show column names
+                if rows:
+                    columns = list(rows[0].keys())
+                    content_parts.append(f"  Columns: {', '.join(columns)}")
+
+                # Show sample data (first few rows)
+                content_parts.append("\n  Sample data (first 3 rows):")
+                for i, row in enumerate(rows[:3], 1):
+                    content_parts.append(f"    Row {i}:")
+                    for key, value in row.items():
+                        # Truncate long values
+                        val_str = str(value)
+                        if len(val_str) > 100:
+                            val_str = val_str[:100] + "..."
+                        content_parts.append(f"      {key}: {val_str}")
+
+                if len(rows) > 3:
+                    content_parts.append(
+                        f"    ... ({len(rows) - 3} more row(s) available)"
+                    )
+
+            except Exception as e:
+                content_parts.append(f"  ❌ Error exploring table: {str(e)}")
+
             content_parts.append("")
 
-    return "\n".join(content_parts)
-
-
-@mcp.resource(
-    "datagouv://resource/{resource_id}",
-    name="Resource Metadata",
-    title="Resource Information",
-    description="Get resource metadata including its dataset information. Use to get details about a resource before querying its data.",
-)
-async def get_resource_resource(resource_id: str) -> str:
-    """
-    Get resource metadata including its dataset information.
-
-    This resource provides information about a specific resource on data.gouv.fr,
-    including its title, description, and the dataset it belongs to.
-    Use this to get details about a resource before querying its data.
-
-    Args:
-        resource_id: The ID of the resource to retrieve
-    """
-    result = await datagouv_api_client.get_resource_and_dataset_metadata(resource_id)
-
-    resource = result.get("resource", {})
-    dataset = result.get("dataset", {})
-
-    content_parts = [
-        f"Resource: {resource.get('title', 'Untitled')}",
-        f"Resource ID: {resource.get('id')}",
-        "",
-    ]
-
-    if resource.get("description"):
-        content_parts.append(f"Description: {resource.get('description')}")
-        content_parts.append("")
-
-    if dataset:
-        content_parts.append(f"Dataset: {dataset.get('title', 'Untitled')}")
-        content_parts.append(f"Dataset ID: {dataset.get('id')}")
-        content_parts.append(f"Dataset URI: datagouv://dataset/{dataset.get('id')}")
-        if dataset.get("description_short"):
+        if not found_data:
             content_parts.append(
-                f"Dataset description: {dataset.get('description_short')}"
+                "⚠️  No data tables were found or accessible for the resources in this dataset."
             )
-        content_parts.append("")
 
-    return "\n".join(content_parts)
+        return "\n".join(content_parts)
+
+    except aiohttp.ClientResponseError as e:
+        return f"Error: HTTP {e.status} - {str(e)}"
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 
 # Run with streamable HTTP transport
