@@ -67,11 +67,11 @@ Cursor supports MCP servers through its settings. To configure the server:
 ```json
 {
   "mcpServers": {
-    "data-gouv": {
+    "datagouv": {
       "url": "http://127.0.0.1:8000/mcp",
       "transport": "http",
       "headers": {
-        "API_KEY": "your-data-gouv-api-key-here"
+        "API_KEY": "your-datagouv-api-key-here"
       }
     }
   }
@@ -85,11 +85,11 @@ Add the following to your `~/.gemini/settings.json` file:
 ```json
 {
   "mcpServers": {
-    "data-gouv": {
+    "datagouv": {
       "transport": "http",
       "httpUrl": "http://127.0.0.1:8000/mcp",
       "headers": {
-        "Authorization": "Bearer your-data-gouv-api-key-here"
+        "Authorization": "Bearer your-datagouv-api-key-here"
       }
     }
   }
@@ -103,13 +103,13 @@ Add the following to your Claude Desktop configuration file (typically `~/Librar
 ```json
 {
   "mcpServers": {
-    "data-gouv": {
+    "datagouv": {
       "command": "npx",
       "args": [
         "mcp-remote",
         "http://127.0.0.1:8000/mcp",
         "--header",
-        "Authorization: Bearer your-data-gouv-api-key-here"
+        "Authorization: Bearer your-datagouv-api-key-here"
       ]
     }
   }
@@ -123,11 +123,11 @@ Add the following to your VS Code `settings.json`:
 ```json
 {
   "servers": {
-    "data-gouv": {
+    "datagouv": {
       "url": "http://127.0.0.1:8000/mcp",
       "type": "http",
       "headers": {
-        "authorization": "Bearer your-data-gouv-api-key-here"
+        "authorization": "Bearer your-datagouv-api-key-here"
       }
     }
   }
@@ -141,14 +141,14 @@ Add the following to your `~/.codeium/mcp_config.json`:
 ```json
 {
   "mcpServers": {
-    "data-gouv": {
+    "datagouv": {
       "command": "npx",
       "args": [
         "-y",
         "mcp-remote",
         "http://127.0.0.1:8000/mcp",
         "--header",
-        "Authorization: Bearer your-data-gouv-api-key-here"
+        "Authorization: Bearer your-datagouv-api-key-here"
       ]
     }
   }
@@ -157,7 +157,7 @@ Add the following to your `~/.codeium/mcp_config.json`:
 
 **Note:**
 - Replace `http://127.0.0.1:8000/mcp` with your actual server URL if running on a different host or port. For production deployments, use `https://` and configure the appropriate hostname.
-- Replace `your-data-gouv-api-key-here` with your actual API key from [data.gouv.fr account settings](https://www.data.gouv.fr/fr/account/).
+- Replace `your-datagouv-api-key-here` with your actual API key from [data.gouv.fr account settings](https://www.data.gouv.fr/fr/account/).
 - The API key is only required for tools that create or modify datasets/resources. Read-only operations (like `search_datasets`) work without an API key.
 - For Cursor, use the `API_KEY` header name. For other clients, you can use either `Authorization: Bearer <token>` or `API_KEY: <token>` format.
 
