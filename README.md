@@ -1,4 +1,4 @@
-Model Context Protocol (MCP) for interacting with data.gouv.fr datasets and resources via LLM chatbots, built using the [the official Python SDK for MCP servers and clients](https://github.com/modelcontextprotocol/python-sdk) and the Streamable HTTP transport protocol.
+Model Context Protocol (MCP) server for interacting with data.gouv.fr datasets and resources via LLM chatbots, built using the [the official Python SDK for MCP servers and clients](https://github.com/modelcontextprotocol/python-sdk) and the Streamable HTTP transport protocol.
 
 ## I don't understand. What is this?
 
@@ -6,18 +6,18 @@ The datagouv MCP is a tool that allows AI chatbots (like Claude, Gemini, or Curs
 
 ## 1. Run the MCP server
 
-Before starting, clone the repository and browse into it:
+Before starting, clone this repository and browse into it:
 
-```bash
+```shell
 git clone git@github.com:datagouv/datagouv-mcp.git
-cd datagouv_mcp
+cd datagouv-mcp
 ```
 
 Docker is required for the recommended setup. Install it via [Docker Desktop](https://www.docker.com/products/docker-desktop/) or any compatible Docker Engine before continuing.
 
 ### 🐳 With Docker (Recommended)
 
-```bash
+```shell
 # With default settings (port 8000, prod environment)
 docker compose up -d
 
@@ -29,41 +29,40 @@ docker compose down
 ```
 
 **Environment variables:**
-- `MCP_PORT`: port for the FastMCP HTTP server (defaults to `8000` when unset).
-- `DATAGOUV_ENV`: `prod` (default) or `demo`. This controls which data.gouv.fr API/website the helpers call and automatically picks the appropriate Tabular API endpoint (`https://tabular-api.data.gouv.fr/api/` for prod, `https://tabular-api.preprod.data.gouv.fr/api/` for demo).
-
-By default the MCP server talks to the production data.gouv.fr API and Tabular API. Set `DATAGOUV_ENV=demo` if you specifically need the demo environment.
+- `MCP_PORT`: port for the MCP HTTP server (defaults to `8000` when unset).
+- `DATAGOUV_ENV`: `prod` (default) or `demo`. This controls which data.gouv.fr environement it uses the data from (https://www.data.gouv.fr or https://demo.data.gouv.fr). By default the MCP server talks to the production data.gouv.fr. Set `DATAGOUV_ENV=demo` if you specifically need the demo environment.
 
 ### Manual Installation
 
+You will need [uv](https://github.com/astral-sh/uv) to install dependencies and run the server.
+
 1. **Install dependencies**
-  ```bash
+  ```shell
   uv sync
   ```
 
 2. **Prepare the environment file**
 
-  Copy the example environment file to create your own `.env` file:
-  ```bash
+  Copy the [example environment file](.env.example) to create your own `.env` file:
+  ```shell
   cp .env.example .env
   ```
 
   Then optionnaly edit `.env` and set the variables that matter for your run:
   ```
-  MCP_PORT=8007
-  # Allowed values: demo | prod (defaults to prod when unset)
-  DATAGOUV_ENV=prod
+  MCP_PORT=8007  # (defaults to 8000 when unset)
+  DATAGOUV_ENV=prod  # Allowed values: demo | prod (defaults to prod when unset)
   ```
 
   Load the variables with your preferred method, e.g.:
-  ```bash
+  ```shell
   set -a && source .env && set +a
   ```
 
 3. **Start the HTTP MCP server**
-   ```bash
-   uv run main.py
-   ```
+  ```shell
+  uv run main.py
+  ```
 
 ## 2. Connect your chatbot to the MCP server
 
@@ -159,24 +158,10 @@ Add the following to your `~/.codeium/mcp_config.json`:
 - Replace `http://127.0.0.1:8000/mcp` with your actual server URL if running on a different host or port. For production deployments, use `https://` and configure the appropriate hostname.
 - This MCP server only exposes read-only tools for now, so no API key is required.
 
-## 🧭 Test with MCP Inspector
-
-Use the official MCP Inspector to interactively test the server tools and resources.
-
-Prerequisites:
-- Node.js with `npx` available
-
-Steps:
-1. Start the MCP server (see above)
-2. In another terminal, launch the inspector:
-   ```bash
-   npx @modelcontextprotocol/inspector --http-url "http://127.0.0.1:${MCP_PORT}/mcp"
-   ```
-   Adjust the URL if you exposed the server on another host/port.
-
 ## 🚚 Transport support
 
 This MCP server uses FastMCP and implements the **Streamable HTTP transport only**.
+
 **STDIO and SSE are not supported**.
 
 ## 📋 Available Endpoints
@@ -224,9 +209,11 @@ The MCP server provides tools to interact with data.gouv.fr datasets:
 
 ## 🧪 Tests
 
+### Automated Tests with pytest
+
 Run the tests with pytest:
 
-```bash
+```shell
 # Run all tests
 uv run pytest
 
@@ -243,11 +230,28 @@ RESOURCE_ID=3b6b2281-b9d9-4959-ae9d-c2c166dff118 uv run pytest tests/test_tabula
 DATAGOUV_ENV=prod uv run pytest
 ```
 
+### Interactive Testing with MCP Inspector
+
+Use the official [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) to interactively test the server tools and resources.
+
+Prerequisites:
+- Node.js with `npx` available
+
+Steps:
+1. Start the MCP server (see above)
+2. In another terminal, launch the inspector:
+   ```shell
+   npx @modelcontextprotocol/inspector --http-url "http://127.0.0.1:${MCP_PORT}/mcp"
+   ```
+   Adjust the URL if you exposed the server on another host/port.
+
 ## 🤝 Contributing
 
 ### 🧹 Code Linting and Formatting
 
-This project follows PEP 8 style guidelines using [Ruff](https://astral.sh/ruff/) for linting and formatting. **Either running these commands manually or installing the pre-commit hook is required before submitting contributions.**
+This project follows PEP 8 style guidelines using [Ruff](https://astral.sh/ruff/) for linting and formatting.
+
+**Either running these commands manually or [installing the pre-commit hook](#-pre-commit-hooks) is required before submitting contributions.**
 
 ```shell
 # Lint and sort imports, and format code
@@ -275,7 +279,7 @@ The release process uses the [`tag_version.sh`](tag_version.sh) script to create
 
 **Prerequisites**: [GitHub CLI](https://cli.github.com/) must be installed and authenticated, and you must be on the main branch with a clean working directory.
 
-```bash
+```shell
 # Create a new release
 ./tag_version.sh <version>
 
@@ -294,4 +298,4 @@ The script automatically:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
