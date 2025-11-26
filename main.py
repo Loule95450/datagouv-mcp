@@ -11,7 +11,7 @@ import aiohttp
 import uvicorn
 from mcp.server.fastmcp import FastMCP
 
-from helpers import datagouv_api_client, tabular_api_client
+from helpers import datagouv_api_client, env_config, tabular_api_client
 
 # Configure logging
 logging.basicConfig(
@@ -261,7 +261,7 @@ async def get_dataset_info(dataset_id: str) -> str:
     """
     try:
         # Get full dataset data from API
-        url = f"{datagouv_api_client.api_base_url()}1/datasets/{dataset_id}/"
+        url = f"{datagouv_api_client.datagouv_api_base_url()}1/datasets/{dataset_id}/"
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 url, timeout=aiohttp.ClientTimeout(total=15)
@@ -278,7 +278,7 @@ async def get_dataset_info(dataset_id: str) -> str:
         if data.get("slug"):
             content_parts.append(f"Slug: {data.get('slug')}")
             content_parts.append(
-                f"URL: {datagouv_api_client.frontend_base_url()}datasets/{data.get('slug')}/"
+                f"URL: {env_config.frontend_base_url()}datasets/{data.get('slug')}/"
             )
 
         if data.get("description_short"):
@@ -386,7 +386,7 @@ async def list_dataset_resources(dataset_id: str) -> str:
 
                 try:
                     # Get full resource metadata
-                    url = f"{datagouv_api_client.api_base_url()}2/datasets/resources/{resource_id}/"
+                    url = f"{datagouv_api_client.datagouv_api_base_url()}2/datasets/resources/{resource_id}/"
                     async with session.get(
                         url, timeout=aiohttp.ClientTimeout(total=15)
                     ) as resp:
@@ -464,7 +464,7 @@ async def get_resource_info(resource_id: str) -> str:
         ]
 
         # Get full resource data from API v2
-        url = f"{datagouv_api_client.api_base_url()}2/datasets/resources/{resource_id}/"
+        url = f"{datagouv_api_client.datagouv_api_base_url()}2/datasets/resources/{resource_id}/"
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 url, timeout=aiohttp.ClientTimeout(total=15)
@@ -525,7 +525,9 @@ async def get_resource_info(resource_id: str) -> str:
         content_parts.append("")
         try:
             # Try to get profile to check if it's tabular
-            profile_url = f"{datagouv_api_client.tabular_api_base_url()}resources/{resource_id}/profile/"
+            from helpers import tabular_api_client
+
+            profile_url = f"{tabular_api_client.tabular_api_base_url()}resources/{resource_id}/profile/"
             async with aiohttp.ClientSession() as session:
                 async with session.get(
                     profile_url, timeout=aiohttp.ClientTimeout(total=10)
@@ -707,7 +709,7 @@ async def download_and_parse_resource(
             return f"Error: Resource with ID '{resource_id}' not found."
 
         # Get full resource data to get URL
-        url = f"{datagouv_api_client.api_base_url()}2/datasets/resources/{resource_id}/"
+        url = f"{datagouv_api_client.datagouv_api_base_url()}2/datasets/resources/{resource_id}/"
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 url, timeout=aiohttp.ClientTimeout(total=15)

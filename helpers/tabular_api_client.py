@@ -3,7 +3,7 @@ from typing import Any
 
 import aiohttp
 
-from helpers import datagouv_api_client
+from helpers import env_config
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,14 @@ async def _get_session(
     return new_session, True
 
 
+def tabular_api_base_url() -> str:
+    """
+    Return the Tabular API base URL matching the current environment.
+    """
+    config = env_config.get_env_config()
+    return config["tabular_api"]
+
+
 async def fetch_resource_data(
     resource_id: str,
     *,
@@ -34,7 +42,7 @@ async def fetch_resource_data(
     """
     sess, owns_session = await _get_session(session)
     try:
-        base_url = datagouv_api_client.tabular_api_base_url()
+        base_url = tabular_api_base_url()
         url = f"{base_url}resources/{resource_id}/data/"
         query_params = {
             "page": max(page, 1),
@@ -83,7 +91,7 @@ async def fetch_resource_profile(
 
     sess, owns_session = await _get_session(session)
     try:
-        base_url = datagouv_api_client.tabular_api_base_url()
+        base_url = tabular_api_base_url()
         url = f"{base_url}resources/{resource_id}/profile/"
         logger.debug(
             f"Tabular API: Fetching resource profile - URL: {url}, "

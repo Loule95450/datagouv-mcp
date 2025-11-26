@@ -1,64 +1,16 @@
-import os
 from typing import Any
 
 import aiohttp
 
-_ENV_TARGETS = {
-    "demo": {
-        "api": "https://demo.data.gouv.fr/api/",
-        "site": "https://demo.data.gouv.fr/",
-        "tabular_api": "https://tabular-api.preprod.data.gouv.fr/api/",
-    },
-    "prod": {
-        "api": "https://www.data.gouv.fr/api/",
-        "site": "https://www.data.gouv.fr/",
-        "tabular_api": "https://tabular-api.data.gouv.fr/api/",
-    },
-}
+from helpers import env_config
 
 
-def _normalize_env(value: str | None) -> str:
-    if not value:
-        return "prod"
-    value = value.strip().lower()
-    if value in _ENV_TARGETS:
-        return value
-    return "prod"
-
-
-def get_current_environment() -> str:
+def datagouv_api_base_url() -> str:
     """
-    Return the environment name selected via DATAGOUV_ENV (demo|prod), defaulting to prod.
+    Return the data.gouv.fr API base URL for the currently selected environment.
     """
-    return _normalize_env(os.getenv("DATAGOUV_ENV"))
-
-
-def api_base_url() -> str:
-    """
-    Return the API base URL for the currently selected environment.
-    """
-    env_name = get_current_environment()
-    return _ENV_TARGETS[env_name]["api"]
-
-
-def frontend_base_url() -> str:
-    """
-    Return the public site base URL matching the current environment (demo or prod).
-    """
-    env_name = get_current_environment()
-    return _ENV_TARGETS[env_name]["site"]
-
-
-def tabular_api_base_url() -> str:
-    """
-    Return the Tabular API base URL matching the current environment.
-    """
-    env_name = get_current_environment()
-    return _ENV_TARGETS[env_name]["tabular_api"]
-
-
-def _base_url() -> str:
-    return api_base_url()
+    config = env_config.get_env_config()
+    return config["datagouv_api"]
 
 
 async def _fetch_json(session: aiohttp.ClientSession, url: str) -> dict[str, Any]:
@@ -76,7 +28,7 @@ async def get_resource_metadata(
     assert session is not None
     try:
         # Use API v2 for resources
-        url = f"{_base_url()}2/datasets/resources/{resource_id}/"
+        url = f"{datagouv_api_base_url()}2/datasets/resources/{resource_id}/"
         data = await _fetch_json(session, url)
         # API v2 returns nested structure
         resource = data.get("resource", {})
@@ -100,7 +52,7 @@ async def get_dataset_metadata(
     assert session is not None
     try:
         # Use API v1 for datasets
-        url = f"{_base_url()}1/datasets/{dataset_id}/"
+        url = f"{datagouv_api_base_url()}1/datasets/{dataset_id}/"
         data = await _fetch_json(session, url)
         return {
             "id": data.get("id"),
@@ -146,7 +98,7 @@ async def get_resources_for_dataset(
     try:
         ds = await get_dataset_metadata(dataset_id, session=session)
         # Fetch resources from API v1
-        url = f"{_base_url()}1/datasets/{dataset_id}/"
+        url = f"{datagouv_api_base_url()}1/datasets/{dataset_id}/"
         data = await _fetch_json(session, url)
         resources = data.get("resources", [])
         res_list = [
@@ -183,7 +135,7 @@ async def search_datasets(
     assert session is not None
     try:
         # Use API v1 for dataset search
-        url = f"{_base_url()}1/datasets/"
+        url = f"{datagouv_api_base_url()}1/datasets/"
         params = {
             "q": query,
             "page": page,
@@ -219,7 +171,7 @@ async def search_datasets(
                     else None,
                     "tags": tags,
                     "resources_count": len(ds.get("resources", [])),
-                    "url": f"{frontend_base_url()}datasets/{ds.get('slug', ds.get('id', ''))}",
+                    "url": f"{env_config.frontend_base_url()}datasets/{ds.get('slug', ds.get('id', ''))}",
                 }
             )
 

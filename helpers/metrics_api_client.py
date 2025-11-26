@@ -3,26 +3,21 @@ from typing import Any
 
 import aiohttp
 
-_METRIC_API_BASE_URLS = {
-    # Official public endpoint
-    # Note: There is no demo/preprod environment for the Metric API.
-    # This structure is kept for future merging with _ENV_TARGETS.
-    "prod": "https://metric-api.data.gouv.fr/api/",
-}
+from helpers import env_config
 
 
 def metric_api_base_url() -> str:
     """
-    Return the Metric API base URL.
-    The Metric API only has a production endpoint (no demo/preprod).
+    Return the Metrics API base URL.
+    The Metrics API only has a production endpoint (no demo/preprod).
     A METRIC_API_BASE_URL env var can override the default.
     """
     custom = os.getenv("METRIC_API_BASE_URL")
     if custom:
         return custom.rstrip("/") + "/"
 
-    # Always use prod since there's no demo/preprod for Metric API
-    return _METRIC_API_BASE_URLS["prod"]
+    config = env_config.get_env_config()
+    return config["metrics_api"]
 
 
 async def _get_session(
