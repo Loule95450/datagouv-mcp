@@ -2,6 +2,15 @@ Model Context Protocol (MCP) for interacting with data.gouv.fr datasets and reso
 
 ## 1. Run the MCP server
 
+Before starting, clone the repository and move into it:
+
+```bash
+git clone git@github.com:datagouv/datagouv-mcp.git
+cd datagouv_mcp
+```
+
+Docker is required for the recommended setup. Install it via [Docker Desktop](https://www.docker.com/products/docker-desktop/) or any compatible Docker Engine before continuing.
+
 ### 🐳 With Docker (Recommended)
 
 ```bash
