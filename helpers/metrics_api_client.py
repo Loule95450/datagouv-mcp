@@ -1,9 +1,12 @@
+import logging
 import os
 from typing import Any
 
 import aiohttp
 
 from helpers import env_config
+
+logger = logging.getLogger(__name__)
 
 
 def metric_api_base_url() -> str:
@@ -55,6 +58,13 @@ async def get_metrics(
     Returns:
         List of metric records, sorted by the time field in the specified order.
     """
+    # Validate and clean id_value
+    if not id_value:
+        raise ValueError("id_value cannot be empty")
+    id_value = str(id_value).strip()
+    if not id_value:
+        raise ValueError("id_value cannot be empty after cleaning")
+
     if id_field is None:
         # Auto-generate field name: "datasets" -> "dataset_id", "resources" -> "resource_id", etc.
         id_field = f"{model.rstrip('s')}_id" if model.endswith("s") else f"{model}_id"
@@ -69,6 +79,10 @@ async def get_metrics(
             f"{time_field}__sort": sort_order,
             "page_size": max(1, min(limit, 100)),
         }
+        logger.debug(
+            f"Fetching metrics from {url} with params: {id_field}__exact={id_value}, "
+            f"{time_field}__sort={sort_order}, page_size={params['page_size']}"
+        )
         async with sess.get(
             url,
             params=params,
@@ -76,7 +90,9 @@ async def get_metrics(
         ) as resp:
             resp.raise_for_status()
             payload = await resp.json()
-            return payload.get("data", [])
+            data = payload.get("data", [])
+            logger.debug(f"Received {len(data)} metric entries from API")
+            return data
     finally:
         if owns_session:
             await sess.close()
@@ -109,6 +125,13 @@ async def get_metrics_csv(
     Returns:
         CSV content as a string, including header row.
     """
+    # Validate and clean id_value
+    if not id_value:
+        raise ValueError("id_value cannot be empty")
+    id_value = str(id_value).strip()
+    if not id_value:
+        raise ValueError("id_value cannot be empty after cleaning")
+
     if id_field is None:
         # Auto-generate field name: "datasets" -> "dataset_id", "resources" -> "resource_id", etc.
         id_field = f"{model.rstrip('s')}_id" if model.endswith("s") else f"{model}_id"
@@ -122,6 +145,10 @@ async def get_metrics_csv(
             f"{id_field}__exact": id_value,
             f"{time_field}__sort": sort_order,
         }
+        logger.debug(
+            f"Fetching metrics CSV from {url} with params: {id_field}__exact={id_value}, "
+            f"{time_field}__sort={sort_order}"
+        )
         async with sess.get(
             url,
             params=params,
