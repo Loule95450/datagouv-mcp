@@ -1,87 +1,94 @@
 # data.gouv.fr MCP Server — Overview
 
-This document captures the key concepts behind the `api_tabular/mcp` implementation so the work can be moved into a dedicated repository without losing any context.
+This document captures the key concepts behind the data.gouv.fr MCP server implementation.
 
 ## Goals
 
 - Provide a Model Context Protocol (MCP) server that exposes data.gouv.fr datasets and resources to LLM clients such as Cursor, Windsurf, Claude Desktop, Gemini CLI, etc.
-- Offer a small set of tools that a chatbot can call to (a) discover datasets and (b) create datasets programmatically.
-- Expose MCP dynamic resources so the client can fetch dataset/resource metadata via `resources/read`.
-- Rely either on the **demo** environment or the **prod** environment: the base URL automatically switches between `https://demo.data.gouv.fr/api/` and `https://www.data.gouv.fr/api/` using the `DATAGOUV_ENV` environment variable (defaults to **prod**). A `.env.example` template is included so you can copy/edit env vars quickly.
+- Offer a comprehensive set of read-only tools that allow chatbots to discover datasets, explore resources, query data, and retrieve metrics.
+- Rely either on the **demo** environment or the **prod** environment: the base URL automatically switches between `https://demo.data.gouv.fr/api/` and `https://www.data.gouv.fr/api/` using the `DATAGOUV_ENV` environment variable (defaults to **prod**).
 
 ## Architecture
 
 ### FastMCP server
 
 - The server lives in `main.py` and instantiates a single `FastMCP` app.
-- Transport: **Streamable HTTP** only. The server is launched with `uvicorn mcp.streamable_http_app()` and listens on `0.0.0.0`.
-- There is **no** STDIO or SSE mode. `stateless_http=True` was removed because it caused `anyio.ClosedResourceError`; default FastMCP session handling works fine.
-- `MCP_PORT` environment variable is mandatory. No default port is baked in for now.
+- Transport: **Streamable HTTP** only. The server is launched with `uvicorn` and listens on `0.0.0.0`.
+- There is **no** STDIO or SSE mode.
+- `MCP_PORT` environment variable defaults to 8000 if not set.
+- The server includes a `/health` HTTP endpoint (separate from MCP protocol) that returns `{"status":"ok","timestamp":"..."}` for health checks and CI testing.
 
 ### Tools
+
+The server provides 7 read-only tools, each defined in its own module under `tools/`:
 
 | Tool | Purpose | Data source |
 | --- | --- | --- |
 | `search_datasets` | Keyword search across datasets (title/description/tags). Returns a formatted text summary with metadata and resource counts. | data.gouv.fr API v1 – `GET /1/datasets/` |
-| `create_dataset` | Creates a dataset (public or draft). Requires an API key supplied by the MCP client. Returns textual confirmation with dataset id/slug. | data.gouv.fr API v1 – `POST /1/datasets/` |
+| `get_dataset_info` | Get detailed information about a specific dataset (metadata, organization, tags, dates, license, etc.). | data.gouv.fr API v1 – `GET /1/datasets/{id}/` |
+| `list_dataset_resources` | List all resources (files) in a dataset with their metadata (format, size, type, URL). | data.gouv.fr API v1/v2 |
+| `get_resource_info` | Get detailed information about a specific resource (format, size, MIME type, URL, dataset association, Tabular API availability). | data.gouv.fr API v2 – `GET /2/datasets/resources/{id}/` |
+| `query_dataset_data` | Query data from a dataset via the Tabular API. Finds a dataset, retrieves its resources, and fetches rows to answer questions. | Tabular API |
+| `download_and_parse_resource` | Download and parse a resource that is not accessible via Tabular API (files too large, formats not supported, external URLs). Supports CSV, CSV.GZ, JSON, JSONL. | Direct file download |
+| `get_metrics` | Get metrics (visits, downloads) for a dataset and/or a resource. Returns monthly statistics. **Note:** Only works with `DATAGOUV_ENV=prod`. | Metrics API |
 
 Implementation details:
-- Both tools are annotated with `@mcp.tool()` and return plain strings (LLMs handle free-form text better in this case).
-- `create_dataset` expects the API key to be provided via the MCP client configuration (`config.apiKey`). The tool parameter wins; if absent, the request is rejected with an explanatory message. We intentionally removed server-side environment fallbacks to avoid ambiguity.
-- HTTP errors (401/400/403/others) are caught and rendered as readable text for the LLM.
-
-### Resources
-
-Three `@mcp.resource` definitions exist:
-
-1. `datagouv://resources` — static list describing the available resource templates and the expected workflow.
-2. `datagouv://dataset/{dataset_id}` — fetches dataset metadata plus all resources, so the LLM can discover resource IDs before querying data.
-3. `datagouv://resource/{resource_id}` — fetches resource metadata plus the associated dataset information.
-
-Both dynamic resources rely on helper functions in `datagouv_api_client.py` that orchestrate the v1 and v2 endpoints.
+- All tools are annotated with `@mcp.tool()` and return plain strings (LLMs handle free-form text better in this case).
+- Tools are organized in individual files under `tools/` and registered via `tools/__init__.py`.
+- HTTP errors are caught and rendered as readable text for the LLM.
+- The server is read-only: no authentication is required for any operations.
 
 ### HTTP client layer
 
 - `helpers/datagouv_api_client.py` wraps all calls to data.gouv.fr API (demo or prod).
+- `helpers/tabular_api_client.py` handles Tabular API requests for querying resource data.
+- `helpers/metrics_api_client.py` handles Metrics API requests for dataset/resource statistics.
+- `helpers/env_config.py` manages environment configuration and base URL derivation.
 - Dataset search + metadata rely on API **v1**; resource metadata relies on API **v2**.
 - Sessions are created ad hoc if not provided, and always closed in `finally` blocks to avoid unclosed connector warnings.
+- All helpers use `httpx` for async HTTP requests.
 - `DATAGOUV_ENV` picks between the demo/prod hosts.
 
 ## Running locally
 
 ```bash
 # Install project deps (uv preferred)
-uv sync
+uv sync --group dev
 
-# Start Hydra/PostgREST stack if you need the main API
-docker compose --profile hydra up -d
+# Start MCP server (MCP_PORT defaults to 8000)
+uv run python main.py
 
-# Copy + edit environment file
-cp .env.example .env
+# Or with custom port
+MCP_PORT=8007 uv run python main.py
 
-# Load env + start MCP server (MCP_PORT is required)
-set -a && source .env && set +a
-uv run main.py
+# Test health endpoint
+curl http://127.0.0.1:8000/health
 ```
 
-The server logs each tool call (`Processing request of type ...`). When `create_dataset` runs with `DEBUG` print statements enabled you will see the key prefix/suffix to confirm the MCP client passed the intended key.
+The server logs at DEBUG level by default. All tool calls are logged via the shared logger instance.
 
 ## MCP client expectations
 
-- Clients must send requests via the Streamable HTTP transport (`POST/GET /mcp`).
-- `resources/list` will show the static resource; dynamic resources are discoverable through `resources/templates/list`.
-- To call `create_dataset`, clients must supply `api_key` in the tool arguments. In Cursor this is achieved by adding `"config": {"apiKey": "..."}` under the MCP server definition.
-- Keys must belong to the environment selected via `DATAGOUV_ENV`. Demo mode rejects production keys and vice-versa.
+- Clients must send requests via the Streamable HTTP transport (`POST /mcp`).
+- The server is read-only: no API keys or authentication are required.
+- All tools work with public data from data.gouv.fr APIs.
+- The `/health` endpoint is available for health checks outside the MCP protocol.
 
 ## Adding new capabilities
 
-1. **New Tool**: create an async function, decorate with `@mcp.tool()`, leverage helpers in `datagouv_api_client`. Keep output textual unless structured data is absolutely needed by the downstream workflow.
-2. **New Resource**: use `@mcp.resource(uri_template, ...)`. Fetch metadata via `datagouv_api_client`. Return concise descriptive text so the LLM can ingest it easily.
-3. **HTTP helper**: extend `datagouv_api_client` with additional v1/v2/vX endpoints. Always close sessions, and raise informative errors (e.g., include response body for 4xx).
+1. **New Tool**:
+   - Create a new file under `tools/` (e.g., `tools/your_tool.py`)
+   - Define a `register_your_tool_tool(mcp: FastMCP) -> None` function
+   - Inside, use `@mcp.tool()` to decorate your async tool function
+   - Leverage helpers in `datagouv_api_client`, `tabular_api_client`, or `metrics_api_client`
+   - Keep output textual unless structured data is absolutely needed
+   - Register the tool in `tools/__init__.py`
+2. **HTTP helper**: extend the appropriate helper module (`datagouv_api_client`, `tabular_api_client`, or `metrics_api_client`) with additional endpoints. Always close sessions, and raise informative errors (e.g., include response body for 4xx).
 
 ## Deployment checklist
 
 - Ensure `DATAGOUV_ENV` is set correctly for the environment you deploy to so dataset links keep pointing to the right public site.
-- Expose `MCP_PORT` and optionally `MCP_HOST` via the surrounding process manager; the FastMCP app itself is stateless.
+- Expose `MCP_PORT` (defaults to 8000) via the surrounding process manager; the FastMCP app itself is stateless.
 - Front the service with HTTPS if exposed publicly. Clients such as Cursor expect HTTPS in production.
-- If moving to a dedicated repository, keep `/mcp/docs` with this document and any client-specific instructions so future contributors (human or LLM) understand the constraints.
+- The `/health` endpoint can be used for health checks and monitoring.
+- CI/CD: The project uses CircleCI for automated testing (see `.circleci/config.yml`). Tests cover helper modules; the MCP server wiring is best exercised via the MCP Inspector.
