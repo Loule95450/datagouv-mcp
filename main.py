@@ -884,7 +884,7 @@ async def get_metrics(
         The Metrics API does not have a demo/preprod environment.
     """
     # Check if we're in demo environment
-    current_env = env_config.get_current_environment()
+    current_env: str = os.getenv("DATAGOUV_ENV", "prod").strip().lower()
     if current_env == "demo":
         return (
             "Error: The Metrics API is not available in the demo environment.\n"
