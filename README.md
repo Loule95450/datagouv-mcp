@@ -219,7 +219,7 @@ The MCP server provides tools to interact with data.gouv.fr datasets:
 
 ### Automated Tests with pytest
 
-Run the tests with pytest:
+Run the tests with pytest (these cover helper modules; the MCP server wiring is best exercised via the MCP Inspector):
 
 ```shell
 # Run all tests
