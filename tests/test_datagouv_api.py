@@ -133,3 +133,21 @@ class TestAsyncFunctions:
         # Should not crash, may return empty or some results
         assert "data" in result
         assert isinstance(result["data"], list)
+
+    async def test_get_resource_details(self, known_resource_id):
+        """Test fetching full resource details payload."""
+        details = await datagouv_api_client.get_resource_details(known_resource_id)
+
+        assert "resource" in details
+        assert details.get("dataset_id") is not None
+        resource = details["resource"]
+        assert resource.get("id") == known_resource_id
+        assert resource.get("title") or resource.get("name")
+
+    async def test_get_dataset_details(self, known_dataset_id):
+        """Test fetching full dataset details payload."""
+        details = await datagouv_api_client.get_dataset_details(known_dataset_id)
+
+        assert details.get("id") == known_dataset_id
+        assert details.get("title") or details.get("name")
+        assert isinstance(details.get("resources", []), list)

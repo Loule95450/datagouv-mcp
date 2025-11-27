@@ -11,6 +11,25 @@ async def _fetch_json(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
     return resp.json()
 
 
+async def get_resource_details(
+    resource_id: str, session: httpx.AsyncClient | None = None
+) -> dict[str, Any]:
+    """
+    Fetch the complete resource payload from the API v2 endpoint.
+    """
+    own = session is None
+    if own:
+        session = httpx.AsyncClient()
+    assert session is not None
+    try:
+        base_url: str = env_config.get_base_url("datagouv_api")
+        url = f"{base_url}2/datasets/resources/{resource_id}/"
+        return await _fetch_json(session, url)
+    finally:
+        if own:
+            await session.aclose()
+
+
 async def get_resource_metadata(
     resource_id: str, session: httpx.AsyncClient | None = None
 ) -> dict[str, Any]:
@@ -19,11 +38,7 @@ async def get_resource_metadata(
         session = httpx.AsyncClient()
     assert session is not None
     try:
-        base_url: str = env_config.get_base_url("datagouv_api")
-        # Use API v2 for resources
-        url = f"{base_url}2/datasets/resources/{resource_id}/"
-        data = await _fetch_json(session, url)
-        # API v2 returns nested structure
+        data = await get_resource_details(resource_id, session=session)
         resource: dict[str, Any] = data.get("resource", {})
         return {
             "id": resource.get("id") or resource_id,
@@ -31,6 +46,25 @@ async def get_resource_metadata(
             "description": resource.get("description"),
             "dataset_id": data.get("dataset_id"),
         }
+    finally:
+        if own:
+            await session.aclose()
+
+
+async def get_dataset_details(
+    dataset_id: str, session: httpx.AsyncClient | None = None
+) -> dict[str, Any]:
+    """
+    Fetch the complete dataset payload from the API v1 endpoint.
+    """
+    own = session is None
+    if own:
+        session = httpx.AsyncClient()
+    assert session is not None
+    try:
+        base_url: str = env_config.get_base_url("datagouv_api")
+        url = f"{base_url}1/datasets/{dataset_id}/"
+        return await _fetch_json(session, url)
     finally:
         if own:
             await session.aclose()
@@ -44,10 +78,7 @@ async def get_dataset_metadata(
         session = httpx.AsyncClient()
     assert session is not None
     try:
-        base_url: str = env_config.get_base_url("datagouv_api")
-        # Use API v1 for datasets
-        url = f"{base_url}1/datasets/{dataset_id}/"
-        data = await _fetch_json(session, url)
+        data = await get_dataset_details(dataset_id, session=session)
         return {
             "id": data.get("id"),
             "title": data.get("title") or data.get("name"),
