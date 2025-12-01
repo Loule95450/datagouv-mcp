@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.5 (2025-12-01)
+
+- build: fix optional dependencies
+- chore: update packages
+- ci: use CircleCI instead of GitHub Actions
+- docs: add LICENSE
+- docs: update LLM docs
+- docs: update README
+- docs: update README
+- feat: add /health health check endpoint
+
+
 ## 0.2.4 (2025-11-27)
 
 - chore: stop tracking .python-version file
