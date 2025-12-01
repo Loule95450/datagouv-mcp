@@ -1,10 +1,12 @@
 # data.gouv.fr MCP Server
 
-Model Context Protocol (MCP) server for interacting with [data.gouv.fr](https://www.data.gouv.fr) datasets and resources via LLM chatbots, built using the [the official Python SDK for MCP servers and clients](https://github.com/modelcontextprotocol/python-sdk) and the Streamable HTTP transport protocol.
+Model Context Protocol (MCP) server that allows AI chatbots to search, explore, and analyze datasets from [data.gouv.fr](https://www.data.gouv.fr), the French national Open Data platform, directly through conversation.
 
-## I don't understand. What is this?
+## What is this?
 
-The data.gouv.fr MCP server is a tool that allows AI chatbots (like Claude, Gemini, or Cursor) to search, explore, and analyze datasets from [data.gouv.fr](https://www.data.gouv.fr), the French national Open Data platform, directly through conversation. Instead of manually browsing the website, you can simply ask questions like "Quels jeux de données sont disponibles sur les prix de l'immobilier ?" or "Montre-moi les dernières données de population pour Paris" and get instant answers. This is currently a **proof of concept (POC)** and is meant to be run **locally on your machine** for now, until it is put into production later. Since it runs locally, you'll need a few basic tech skills to set it up, but Docker makes the process straightforward.
+The data.gouv.fr MCP server is a tool that allows AI chatbots (like Claude, Gemini, or Cursor) to interact with datasets from [data.gouv.fr](https://www.data.gouv.fr). Instead of manually browsing the website, you can simply ask questions like "Quels jeux de données sont disponibles sur les prix de l'immobilier ?" or "Montre-moi les dernières données de population pour Paris" and get instant answers. This is currently a **proof of concept (POC)** and is meant to be run **locally on your machine** for now, until it is put into production later. Since it runs locally, you'll need a few basic tech skills to set it up, but Docker makes the process straightforward.
+
+The server is built using the [official Python SDK for MCP servers and clients](https://github.com/modelcontextprotocol/python-sdk) and uses the Streamable HTTP transport protocol.
 
 ## 1. Run the MCP server
 
