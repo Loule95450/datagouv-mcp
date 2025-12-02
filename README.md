@@ -113,6 +113,28 @@ Use the `claude mcp` command to add the MCP server:
 claude mcp add --transport http datagouv http://127.0.0.1:8000/mcp
 ```
 
+### AnythingLLM
+
+1. Locate the `anythingllm_mcp_servers.json` file in your AnythingLLM storage plugins directory:
+   - **Mac**: `~/Library/Application Support/anythingllm-desktop/storage/plugins/anythingllm_mcp_servers.json`
+   - **Linux**: `~/.config/anythingllm-desktop/storage/plugins/anythingllm_mcp_servers.json`
+   - **Windows**: `C:\Users\<username>\AppData\Roaming\anythingllm-desktop\storage\plugins\anythingllm_mcp_servers.json`
+
+2. Add the following configuration:
+
+```json
+{
+  "mcpServers": {
+    "datagouv": {
+      "type": "streamable",
+      "url": "http://127.0.0.1:8000/mcp"
+    }
+  }
+}
+```
+
+For more details, see the [AnythingLLM MCP documentation](https://docs.anythingllm.com/mcp-compatibility/overview).
+
 ### VS Code
 
 Add the following to your VS Code `settings.json`:
