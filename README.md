@@ -2,13 +2,15 @@
 
 Model Context Protocol (MCP) server that allows AI chatbots to search, explore, and analyze datasets from [data.gouv.fr](https://www.data.gouv.fr), the French national Open Data platform, directly through conversation.
 
-## What is this?
+## 🤔 What is this?
 
 The data.gouv.fr MCP server is a tool that allows AI chatbots (like Claude, Gemini, or Cursor) to interact with datasets from [data.gouv.fr](https://www.data.gouv.fr). Instead of manually browsing the website, you can simply ask questions like "Quels jeux de données sont disponibles sur les prix de l'immobilier ?" or "Montre-moi les dernières données de population pour Paris" and get instant answers. This is currently a **proof of concept (POC)** and is meant to be run **locally on your machine** for now, until it is put into production later. Since it runs locally, you'll need a few basic tech skills to set it up, but Docker makes the process straightforward.
 
 The server is built using the [official Python SDK for MCP servers and clients](https://github.com/modelcontextprotocol/python-sdk) and uses the Streamable HTTP transport protocol.
 
-## 1. Run the MCP server
+## 🚀 Getting Started
+
+### 1. Run the MCP server
 
 Before starting, clone this repository and browse into it:
 
@@ -36,7 +38,7 @@ docker compose down
 - `MCP_PORT`: port for the MCP HTTP server (defaults to `8000` when unset).
 - `DATAGOUV_ENV`: `prod` (default) or `demo`. This controls which data.gouv.fr environement it uses the data from (https://www.data.gouv.fr or https://demo.data.gouv.fr). By default the MCP server talks to the production data.gouv.fr. Set `DATAGOUV_ENV=demo` if you specifically need the demo environment.
 
-### Manual Installation
+### ⚙️ Manual Installation
 
 You will need [uv](https://github.com/astral-sh/uv) to install dependencies and run the server.
 
@@ -68,7 +70,7 @@ You will need [uv](https://github.com/astral-sh/uv) to install dependencies and 
   uv run main.py
   ```
 
-## 2. Connect your chatbot to the MCP server
+### 2. Connect your chatbot to the MCP server
 
 The MCP server configuration depends on your client. Use the appropriate configuration format for your client:
 
@@ -244,7 +246,7 @@ The MCP server provides tools to interact with data.gouv.fr datasets:
 
 ## 🧪 Tests
 
-### Automated Tests with pytest
+### ✅ Automated Tests with pytest
 
 Run the tests with pytest (these cover helper modules; the MCP server wiring is best exercised via the MCP Inspector):
 
@@ -265,7 +267,7 @@ RESOURCE_ID=3b6b2281-b9d9-4959-ae9d-c2c166dff118 uv run pytest tests/test_tabula
 DATAGOUV_ENV=prod uv run pytest
 ```
 
-### Interactive Testing with MCP Inspector
+### 🔍 Interactive Testing with MCP Inspector
 
 Use the official [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) to interactively test the server tools and resources.
 
