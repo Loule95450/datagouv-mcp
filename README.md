@@ -7,11 +7,141 @@ Model Context Protocol (MCP) server that allows AI chatbots to search, explore, 
 
 ## 🤔 What is this?
 
-The data.gouv.fr MCP server is a tool that allows AI chatbots (like Claude, Gemini, or Cursor) to interact with datasets from [data.gouv.fr](https://www.data.gouv.fr). Instead of manually browsing the website, you can simply ask questions like "Quels jeux de données sont disponibles sur les prix de l'immobilier ?" or "Montre-moi les dernières données de population pour Paris" and get instant answers. This is currently a **proof of concept (POC)** and is meant to be run **locally on your machine** for now, until it is put into production later. Since it runs locally, you'll need a few basic tech skills to set it up, but Docker makes the process straightforward.
+The data.gouv.fr MCP server is a tool that allows AI chatbots (like Claude, Gemini, or Cursor) to interact with datasets from [data.gouv.fr](https://www.data.gouv.fr). Instead of manually browsing the website, you can simply ask questions like "Quels jeux de données sont disponibles sur les prix de l'immobilier ?" or "Montre-moi les dernières données de population pour Paris" and get instant answers. A hosted endpoint is available at `https://mcp.data.gouv.fr/mcp`, and you can also run the server locally if you prefer.
 
 The server is built using the [official Python SDK for MCP servers and clients](https://github.com/modelcontextprotocol/python-sdk) and uses the Streamable HTTP transport protocol.
 
-## 🚀 Getting Started
+## 🌐 Connect your chatbot to the MCP server
+
+Use the hosted endpoint `https://mcp.data.gouv.fr/mcp` (recommended). If you self-host, swap in your own URL.
+
+The MCP server configuration depends on your client. Use the appropriate configuration format for your client:
+
+### Claude Desktop
+
+Add the following to your Claude Desktop configuration file (typically `~/Library/Application Support/Claude/claude_desktop_config.json` on MacOS, or `%APPDATA%\Claude\claude_desktop_config.json` on Windows):
+
+```json
+{
+  "mcpServers": {
+    "datagouv": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://mcp.data.gouv.fr/mcp"
+      ]
+    }
+  }
+}
+```
+
+### Claude Code
+
+Use the `claude mcp` command to add the MCP server:
+
+```shell
+claude mcp add --transport http datagouv https://mcp.data.gouv.fr/mcp
+```
+
+### ChatGPT
+
+ChatGPT can connect via “Connectors” (beta, paid plans only: Plus/Pro/Team/Enterprise depending on workspace enablement). Create a custom connector and set the URL to `https://mcp.data.gouv.fr/mcp` (no API key needed, tools are read-only). If the connector option is missing in your account, it has not yet been enabled by OpenAI.
+
+### Gemini CLI
+
+Add the following to your `~/.gemini/settings.json` file:
+
+```json
+{
+  "mcpServers": {
+    "datagouv": {
+      "transport": "http",
+      "httpUrl": "https://mcp.data.gouv.fr/mcp"
+    }
+  }
+}
+```
+
+### AnythingLLM
+
+1. Locate the `anythingllm_mcp_servers.json` file in your AnythingLLM storage plugins directory:
+   - **Mac**: `~/Library/Application Support/anythingllm-desktop/storage/plugins/anythingllm_mcp_servers.json`
+   - **Linux**: `~/.config/anythingllm-desktop/storage/plugins/anythingllm_mcp_servers.json`
+   - **Windows**: `C:\Users\<username>\AppData\Roaming\anythingllm-desktop\storage\plugins\anythingllm_mcp_servers.json`
+
+2. Add the following configuration:
+
+```json
+{
+  "mcpServers": {
+    "datagouv": {
+      "type": "streamable",
+      "url": "https://mcp.data.gouv.fr/mcp"
+    }
+  }
+}
+```
+
+For more details, see the [AnythingLLM MCP documentation](https://docs.anythingllm.com/mcp-compatibility/overview).
+
+### VS Code
+
+Add the following to your VS Code `settings.json`:
+
+```json
+{
+  "servers": {
+    "datagouv": {
+      "url": "https://mcp.data.gouv.fr/mcp",
+      "type": "http"
+    }
+  }
+}
+```
+
+### Cursor
+
+Cursor supports MCP servers through its settings. To configure the server:
+
+1. Open Cursor Settings
+2. Search for "MCP" or "Model Context Protocol"
+3. Add a new MCP server with the following configuration:
+
+```json
+{
+  "mcpServers": {
+    "datagouv": {
+      "url": "https://mcp.data.gouv.fr/mcp",
+      "transport": "http"
+    }
+  }
+}
+```
+
+### Windsurf
+
+Add the following to your `~/.codeium/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "datagouv": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.data.gouv.fr/mcp"
+      ]
+    }
+  }
+}
+```
+
+**Note:**
+- The hosted endpoint is `https://mcp.data.gouv.fr/mcp`. If you run the server yourself, replace it with your own URL (see “Run locally” below for the default local endpoint).
+- This MCP server only exposes read-only tools for now, so no API key is required.
+
+## 🖥️ Run locally
 
 ### 1. Run the MCP server
 
@@ -73,129 +203,9 @@ You will need [uv](https://github.com/astral-sh/uv) to install dependencies and 
   uv run main.py
   ```
 
-### 2. Connect your chatbot to the MCP server
+### 2. Connect your chatbot to the local MCP server
 
-The MCP server configuration depends on your client. Use the appropriate configuration format for your client:
-
-### Gemini CLI
-
-Add the following to your `~/.gemini/settings.json` file:
-
-```json
-{
-  "mcpServers": {
-    "datagouv": {
-      "transport": "http",
-      "httpUrl": "http://127.0.0.1:8000/mcp"
-    }
-  }
-}
-```
-
-### Claude Desktop
-
-Add the following to your Claude Desktop configuration file (typically `~/Library/Application Support/Claude/claude_desktop_config.json` on MacOS, or `%APPDATA%\Claude\claude_desktop_config.json` on Windows):
-
-```json
-{
-  "mcpServers": {
-    "datagouv": {
-      "command": "npx",
-      "args": [
-        "mcp-remote",
-        "http://127.0.0.1:8000/mcp"
-      ]
-    }
-  }
-}
-```
-
-### Claude Code
-
-Use the `claude mcp` command to add the MCP server:
-
-```shell
-claude mcp add --transport http datagouv http://127.0.0.1:8000/mcp
-```
-
-### AnythingLLM
-
-1. Locate the `anythingllm_mcp_servers.json` file in your AnythingLLM storage plugins directory:
-   - **Mac**: `~/Library/Application Support/anythingllm-desktop/storage/plugins/anythingllm_mcp_servers.json`
-   - **Linux**: `~/.config/anythingllm-desktop/storage/plugins/anythingllm_mcp_servers.json`
-   - **Windows**: `C:\Users\<username>\AppData\Roaming\anythingllm-desktop\storage\plugins\anythingllm_mcp_servers.json`
-
-2. Add the following configuration:
-
-```json
-{
-  "mcpServers": {
-    "datagouv": {
-      "type": "streamable",
-      "url": "http://127.0.0.1:8000/mcp"
-    }
-  }
-}
-```
-
-For more details, see the [AnythingLLM MCP documentation](https://docs.anythingllm.com/mcp-compatibility/overview).
-
-### VS Code
-
-Add the following to your VS Code `settings.json`:
-
-```json
-{
-  "servers": {
-    "datagouv": {
-      "url": "http://127.0.0.1:8000/mcp",
-      "type": "http"
-    }
-  }
-}
-```
-
-### Cursor
-
-Cursor supports MCP servers through its settings. To configure the server:
-
-1. Open Cursor Settings
-2. Search for "MCP" or "Model Context Protocol"
-3. Add a new MCP server with the following configuration:
-
-```json
-{
-  "mcpServers": {
-    "datagouv": {
-      "url": "http://127.0.0.1:8000/mcp",
-      "transport": "http"
-    }
-  }
-}
-```
-
-### Windsurf
-
-Add the following to your `~/.codeium/mcp_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "datagouv": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "mcp-remote",
-        "http://127.0.0.1:8000/mcp"
-      ]
-    }
-  }
-}
-```
-
-**Note:**
-- Replace `http://127.0.0.1:8000/mcp` with your actual server URL if running on a different host or port. For production deployments, use `https://` and configure the appropriate hostname.
-- This MCP server only exposes read-only tools for now, so no API key is required.
+Reuse the client configurations from “Connect your chatbot to the MCP server” above, but replace the hosted URL with your local endpoint (default: `http://127.0.0.1:${MCP_PORT:-8000}/mcp`).
 
 ## 🚚 Transport support
 
