@@ -17,6 +17,10 @@ Use the hosted endpoint `https://mcp.data.gouv.fr/mcp` (recommended). If you sel
 
 The MCP server configuration depends on your client. Use the appropriate configuration format for your client:
 
+### ChatGPT
+
+ChatGPT can connect via “Connectors” (beta, paid plans only: Plus/Pro/Team/Enterprise depending on workspace enablement). Create a custom connector and set the URL to `https://mcp.data.gouv.fr/mcp` (no API key needed, tools are read-only). If the connector option is missing in your account, it has not yet been enabled by OpenAI.
+
 ### Claude Desktop
 
 Add the following to your Claude Desktop configuration file (typically `~/Library/Application Support/Claude/claude_desktop_config.json` on MacOS, or `%APPDATA%\Claude\claude_desktop_config.json` on Windows):
@@ -42,10 +46,6 @@ Use the `claude mcp` command to add the MCP server:
 ```shell
 claude mcp add --transport http datagouv https://mcp.data.gouv.fr/mcp
 ```
-
-### ChatGPT
-
-ChatGPT can connect via “Connectors” (beta, paid plans only: Plus/Pro/Team/Enterprise depending on workspace enablement). Create a custom connector and set the URL to `https://mcp.data.gouv.fr/mcp` (no API key needed, tools are read-only). If the connector option is missing in your account, it has not yet been enabled by OpenAI.
 
 ### Gemini CLI
 
@@ -154,7 +154,7 @@ cd datagouv-mcp
 
 Docker is required for the recommended setup. Install it via [Docker Desktop](https://www.docker.com/products/docker-desktop/) or any compatible Docker Engine before continuing.
 
-### 🐳 With Docker (Recommended)
+#### 🐳 With Docker (Recommended)
 
 ```shell
 # With default settings (port 8000, prod environment)
@@ -171,7 +171,7 @@ docker compose down
 - `MCP_PORT`: port for the MCP HTTP server (defaults to `8000` when unset).
 - `DATAGOUV_ENV`: `prod` (default) or `demo`. This controls which data.gouv.fr environement it uses the data from (https://www.data.gouv.fr or https://demo.data.gouv.fr). By default the MCP server talks to the production data.gouv.fr. Set `DATAGOUV_ENV=demo` if you specifically need the demo environment.
 
-### ⚙️ Manual Installation
+#### ⚙️ Manual Installation
 
 You will need [uv](https://github.com/astral-sh/uv) to install dependencies and run the server.
 
@@ -205,7 +205,7 @@ You will need [uv](https://github.com/astral-sh/uv) to install dependencies and 
 
 ### 2. Connect your chatbot to the local MCP server
 
-Reuse the client configurations from “Connect your chatbot to the MCP server” above, but replace the hosted URL with your local endpoint (default: `http://127.0.0.1:${MCP_PORT:-8000}/mcp`).
+Follow the steps in [Connect your chatbot to the MCP server](#-connect-your-chatbot-to-the-mcp-server) and simply swap the hosted URL for your local endpoint (default: `http://127.0.0.1:${MCP_PORT:-8000}/mcp`).
 
 ## 🚚 Transport support
 
@@ -310,7 +310,7 @@ uv run ruff check  --select I --fix && uv run ruff format
 
 ### 🔗 Pre-commit Hooks
 
-This repository uses a [pre-commit](https://pre-commit.com/) hook which lint and format code before each commit. **Installing the pre-commit hook is required for contributions.**
+This repository uses a [pre-commit](https://pre-commit.com/) hook which lint and format code before each commit. Installing the pre-commit hook is strongly recommended so the checks run automatically.
 
 **Install pre-commit hooks:**
 ```shell
