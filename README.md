@@ -62,6 +62,19 @@ Add the following to your `~/.gemini/settings.json` file:
 }
 ```
 
+### Mistral Vibe CLI
+
+Edit your Vibe config (default `~/.vibe/config.toml`) and add the MCP server:
+
+```toml
+[[mcp_servers]]
+name = "datagouv"
+transport = "streamable-http"
+url = "https://mcp.data.gouv.fr/mcp"
+```
+
+See the full Vibe MCP options in the official docs: [MCP server configuration](https://github.com/mistralai/mistral-vibe?tab=readme-ov-file#mcp-server-configuration).
+
 ### AnythingLLM
 
 1. Locate the `anythingllm_mcp_servers.json` file in your AnythingLLM storage plugins directory:
