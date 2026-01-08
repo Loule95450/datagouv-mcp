@@ -105,7 +105,16 @@ async def fetch_resource_profile(
             )
 
         resp.raise_for_status()
-        return resp.json()
+        profile_data: dict[str, Any] = resp.json()
+
+        # Clean up headers: remove surrounding quotes if present
+        if "profile" in profile_data and "header" in profile_data["profile"]:
+            profile_data["profile"]["header"] = [
+                header.strip('"') if isinstance(header, str) else header
+                for header in profile_data["profile"]["header"]
+            ]
+
+        return profile_data
     finally:
         if owns_session:
             await sess.aclose()
