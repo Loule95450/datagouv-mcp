@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.9 (2026-01-12)
+
+- fix: adapt to new headers in tabular-api which fix tests
+- fix: fix issue [#2](https://github.com/datagouv/datagouv-mcp/pull/2): use tabular-api anyway when it's a resource exception
+- fix(server): allow all hosts to prevent 421 Invalid Host header errors
+
+
 ## 0.2.8 (2026-01-07)
 
 - chore: fix tag_version.sh for trailing slashes in CHANGELOG
