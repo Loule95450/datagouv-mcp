@@ -8,6 +8,7 @@ from typing import Awaitable, Callable
 
 import uvicorn
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from tools import register_tools
 
@@ -20,7 +21,21 @@ logging.basicConfig(
 logger = logging.getLogger(LOGGER_NAME)
 logger.setLevel(logging.DEBUG)
 
-mcp = FastMCP("data.gouv.fr MCP server")
+# Configure transport security to disable DNS rebinding protection
+# This fixes the "Invalid Host header" 421 error when behind reverse proxies
+# The DNS rebinding protection in MCP SDK 1.23.0+ validates Host headers strictly,
+# but MCP SDK doesn't support wildcard "*" in allowed_hosts, so we disable
+# the protection. This is safe when the server is behind a reverse proxy or
+# properly secured network infrastructure.
+# Note: DNS rebinding protection is primarily for localhost servers without auth.
+transport_security = TransportSecuritySettings(
+    enable_dns_rebinding_protection=False,  # Disable to allow all hosts
+)
+
+mcp = FastMCP(
+    "data.gouv.fr MCP server",
+    transport_security=transport_security,
+)
 register_tools(mcp)
 
 
