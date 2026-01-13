@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.10 (2026-01-13)
+
+- chore: revert mcp to 1.22 and update other dependencies
+- Revert "fix(server): allow all hosts to prevent 421 Invalid Host header errors"
+
+
 ## 0.2.9 (2026-01-12)
 
 - fix: adapt to new headers in tabular-api which fix tests
