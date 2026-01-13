@@ -14,6 +14,7 @@ def register_query_resource_data_tool(mcp: FastMCP) -> None:
         question: str,
         resource_id: str,
         page: int = 1,
+        page_size: int = 20,
     ) -> str:
         """
         Query data from a specific resource (file) via the Tabular API.
@@ -23,8 +24,6 @@ def register_query_resource_data_tool(mcp: FastMCP) -> None:
         tabular files (CSV, XLSX, etc.) without downloading the entire file. This tool
         fetches rows from a specific resource using this API.
 
-        Each call retrieves up to 200 rows (the maximum allowed by the API).
-
         Note: The Tabular API has default size limits (CSV > 100 MB, XLSX > 12.5 MB),
         but some large files are exceptions and remain available. Use get_resource_info
         to check actual availability before choosing which tool to use.
@@ -33,14 +32,18 @@ def register_query_resource_data_tool(mcp: FastMCP) -> None:
         1. Use search_datasets to find the appropriate dataset
         2. Use list_dataset_resources to see available resources (files) in the dataset
         3. (Optional) Use get_resource_info to verify Tabular API availability
-        4. Use query_resource_data with the chosen resource_id to fetch data
-        5. If the answer is not in the first page, use query_resource_data with page=2, page=3, etc.
+        4. Use query_resource_data with default page_size (20) to preview data structure
+        5. Based on total rows:
+           - Small dataset (<500 rows): increase page_size and/or paginate
+           - Large dataset (>1000 rows): use download_and_parse_resource instead
 
         Args:
             question: The question or description of what data you're looking for (for context)
             resource_id: Resource ID (use list_dataset_resources to find resource IDs)
-            page: Page number to retrieve (default: 1). Use this to navigate through large datasets.
-                  Each page contains up to 200 rows.
+            page: Page number to retrieve (default: 1). Use this to navigate through datasets.
+            page_size: Number of rows to retrieve per page (default: 20, max: 200).
+                       Use a small value (10-20) for a quick preview of data structure.
+                       Use a larger value (100-200) when you need more data to answer.
 
         Returns:
             Formatted text with the data found from the resource, including pagination info
@@ -81,8 +84,8 @@ def register_query_resource_data_tool(mcp: FastMCP) -> None:
                 ]
             )
 
-            # Fetch data via the Tabular API (always use max page size of 200)
-            page_size = 200
+            # Fetch data via the Tabular API (clamp page_size to valid range)
+            page_size = max(1, min(page_size, 200))
             logger.info(
                 f"Querying Tabular API for resource: {resource_title} "
                 f"(ID: {resource_id}), page: {page}, page_size: {page_size}"
@@ -142,18 +145,21 @@ def register_query_resource_data_tool(mcp: FastMCP) -> None:
                 if links.get("next"):
                     next_page = page + 1
                     content_parts.append("")
-                    content_parts.append(
-                        f"📄 More data available! To see the next page, call query_resource_data "
-                        f"again with page={next_page} (and the same resource_id and question)."
-                    )
-                    if total_count and page_size_meta:
-                        remaining_pages = (
-                            (total_count + page_size_meta - 1) // page_size_meta
-                        ) - page
-                        if remaining_pages > 1:
-                            content_parts.append(
-                                f"   There are {remaining_pages} more page(s) available after this one."
-                            )
+
+                    # Adapt message based on dataset size
+                    if total_count and total_count > 1000:
+                        content_parts.append(
+                            f"⚠️ Large dataset ({total_count} rows). "
+                            f"For comprehensive analysis, consider using download_and_parse_resource "
+                            f"instead of paginating through many pages."
+                        )
+                        content_parts.append(
+                            f"   If you only need specific data, you can continue with page={next_page}."
+                        )
+                    else:
+                        content_parts.append(
+                            f"📄 More data available. Use page={next_page} to see the next page."
+                        )
 
             except tabular_api_client.ResourceNotAvailableError as e:
                 logger.warning(f"Resource not available: {resource_id} - {str(e)}")
