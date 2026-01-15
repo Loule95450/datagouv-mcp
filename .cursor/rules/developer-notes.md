@@ -12,7 +12,7 @@ This file contains implementation details that future contributors (human or LLM
 │  ├─ get_dataset_info.py
 │  ├─ list_dataset_resources.py
 │  ├─ get_resource_info.py
-│  ├─ query_dataset_data.py
+│  ├─ query_resource_data.py
 │  ├─ download_and_parse_resource.py
 │  └─ get_metrics.py
 └─ helpers/              # API client helpers
@@ -28,6 +28,7 @@ This file contains implementation details that future contributors (human or LLM
 
 - `DATAGOUV_ENV` selects the target platform (`prod` by default; set to `demo` only when testing against the staging APIs). The helpers derive both API and public-site URLs from this variable.
 - `MCP_PORT` defaults to 8000 if not set. Example: `MCP_PORT=8007 uv run python main.py` to use a custom port.
+- `MCP_HOST` defaults to `0.0.0.0` if not set. Set to `127.0.0.1` for local development.
 - The `CHANGELOG.md` file is generated automatically by `tag_version.sh` when creating a release tag—do not edit it manually between releases.
 
 ## datagouv_api_client helpers
@@ -61,11 +62,10 @@ Implementation tips:
 
 - Tool failures should return a human-readable string, not an exception. This keeps MCP Inspector / clients friendly.
 - Include HTTP status and server messages when available.
-- All tools use a shared logger instance (`logging.getLogger("datagouv_mcp")`) defined in `main.py`.
 
 ## Logging / Debugging
 
-- All modules use the shared logger `logging.getLogger("datagouv_mcp")` for consistent logging.
+- All modules use the shared logger instance ()`logging.getLogger("datagouv_mcp")`  defined in `main.py` for consistent logging.
 - The server logs at DEBUG level by default. Helper modules log API requests and errors.
 - The server already logs every MCP request type (thanks to FastMCP). Additional logging should be lightweight and contextual.
 

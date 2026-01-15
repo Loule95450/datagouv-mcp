@@ -13,9 +13,10 @@ This document captures the key concepts behind the data.gouv.fr MCP server imple
 ### FastMCP server
 
 - The server lives in `main.py` and instantiates a single `FastMCP` app.
-- Transport: **Streamable HTTP** only. The server is launched with `uvicorn` and listens on `0.0.0.0`.
+- Transport: **Streamable HTTP** only. The server is launched with `uvicorn`.
 - There is **no** STDIO or SSE mode.
 - `MCP_PORT` environment variable defaults to 8000 if not set.
+- `MCP_HOST` environment variable defaults to `0.0.0.0` if not set.
 - The server includes a `/health` HTTP endpoint (separate from MCP protocol) that returns `{"status":"ok","timestamp":"..."}` for health checks and CI testing.
 
 ### Tools
@@ -28,7 +29,7 @@ The server provides 7 read-only tools, each defined in its own module under `too
 | `get_dataset_info` | Get detailed information about a specific dataset (metadata, organization, tags, dates, license, etc.). | data.gouv.fr API v1 – `GET /1/datasets/{id}/` |
 | `list_dataset_resources` | List all resources (files) in a dataset with their metadata (format, size, type, URL). | data.gouv.fr API v1/v2 |
 | `get_resource_info` | Get detailed information about a specific resource (format, size, MIME type, URL, dataset association, Tabular API availability). | data.gouv.fr API v2 – `GET /2/datasets/resources/{id}/` |
-| `query_dataset_data` | Query data from a dataset via the Tabular API. Finds a dataset, retrieves its resources, and fetches rows to answer questions. | Tabular API |
+| `query_resource_data` | Query data from a resource via the Tabular API. Fetches rows from a specific resource to answer questions. | Tabular API |
 | `download_and_parse_resource` | Download and parse a resource that is not accessible via Tabular API (files too large, formats not supported, external URLs). Supports CSV, CSV.GZ, JSON, JSONL. | Direct file download |
 | `get_metrics` | Get metrics (visits, downloads) for a dataset and/or a resource. Returns monthly statistics. **Note:** Only works with `DATAGOUV_ENV=prod`. | Metrics API |
 
