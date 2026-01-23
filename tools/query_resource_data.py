@@ -101,20 +101,19 @@ def register_query_resource_data_tool(mcp: FastMCP) -> None:
                     columns = [str(k) if k is not None else "" for k in rows[0].keys()]
                     content_parts.append(f"Columns: {', '.join(columns)}")
 
-                # Show sample data (first few rows)
-                content_parts.append("\nSample data (first 3 rows):")
-                for i, row in enumerate(rows[:3], 1):
+                # Show all retrieved data
+                content_parts.append("")
+                if len(rows) == 1:
+                    content_parts.append("Data (1 row):")
+                else:
+                    content_parts.append(f"Data ({len(rows)} rows):")
+                for i, row in enumerate(rows, 1):
                     content_parts.append(f"  Row {i}:")
                     for key, value in row.items():
                         val_str = str(value) if value is not None else ""
                         if len(val_str) > 100:
                             val_str = val_str[:100] + "..."
                         content_parts.append(f"    {key}: {val_str}")
-
-                if len(rows) > 3:
-                    content_parts.append(
-                        f"  ... ({len(rows) - 3} more row(s) available)"
-                    )
 
                 links = tabular_data.get("links", {})
                 if links.get("next"):

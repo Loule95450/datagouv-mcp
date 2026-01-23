@@ -17,7 +17,7 @@ def register_download_and_parse_resource_tool(mcp: FastMCP) -> None:
     @mcp.tool()
     async def download_and_parse_resource(
         resource_id: str,
-        max_rows: int = 1000,
+        max_rows: int = 20,
         max_size_mb: int = 500,
     ) -> str:
         """
@@ -25,7 +25,10 @@ def register_download_and_parse_resource_tool(mcp: FastMCP) -> None:
 
         Use for JSON/JSONL files, or when full dataset analysis is needed.
         Supports CSV, CSV.GZ, JSON, JSONL.
-        For CSV/XLSX preview or small queries, prefer query_resource_data (faster).
+
+        Strategy: Start with default max_rows (20) to preview structure and size.
+        If you need all data, call again with a higher max_rows value.
+        For CSV/XLSX preview, prefer query_resource_data (faster).
         """
         try:
             # Get full resource data to find URL and metadata
@@ -132,19 +135,19 @@ def register_download_and_parse_resource_tool(mcp: FastMCP) -> None:
                 columns = [str(k) if k is not None else "" for k in rows[0].keys()]
                 content_parts.append(f"Columns: {', '.join(columns)}")
 
-            # Show sample data
+            # Show all parsed data (up to max_rows)
             content_parts.append("")
-            content_parts.append("Sample data (first 3 rows):")
-            for i, row in enumerate(rows[:3], 1):
+            if len(rows) == 1:
+                content_parts.append("Data (1 row):")
+            else:
+                content_parts.append(f"Data ({len(rows)} rows):")
+            for i, row in enumerate(rows, 1):
                 content_parts.append(f"  Row {i}:")
                 for key, value in row.items():
                     val_str = str(value) if value is not None else ""
                     if len(val_str) > 100:
                         val_str = val_str[:100] + "..."
                     content_parts.append(f"    {key}: {val_str}")
-
-            if len(rows) > 3:
-                content_parts.append(f"  ... ({len(rows) - 3} more row(s) available)")
 
             if total_rows > max_rows:
                 content_parts.append("")

@@ -262,9 +262,9 @@ The MCP server provides tools to interact with data.gouv.fr datasets:
 
 - **`download_and_parse_resource`** - Download and parse a resource that is not accessible via Tabular API (files too large, formats not supported, external URLs).
 
-  Parameters: `resource_id` (required), `max_rows` (optional, default: 1000), `max_size_mb` (optional, default: 500)
+  Parameters: `resource_id` (required), `max_rows` (optional, default: 20), `max_size_mb` (optional, default: 500)
 
-  Supported formats: CSV, CSV.GZ, JSON, JSONL. Useful for files exceeding Tabular API limits or formats not supported by Tabular API.
+  Supported formats: CSV, CSV.GZ, JSON, JSONL. Useful for files exceeding Tabular API limits or formats not supported by Tabular API. Start with default max_rows (20) to preview, then call again with higher max_rows if you need all data.
 
 - **`get_metrics`** - Get metrics (visits, downloads) for a dataset and/or a resource.
 
