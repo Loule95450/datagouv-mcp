@@ -15,11 +15,18 @@ def register_query_resource_data_tool(mcp: FastMCP) -> None:
         resource_id: str,
         page: int = 1,
         page_size: int = 20,
+        filter_column: str | None = None,
+        filter_value: str | None = None,
+        filter_operator: str = "exact",
+        sort_column: str | None = None,
+        sort_direction: str = "asc",
     ) -> str:
         """
         Query tabular data from a resource via the Tabular API (no download needed).
 
         Works for CSV/XLSX files. Start with small page_size (20) to preview structure.
+        Use filter_column/filter_value/filter_operator to filter, sort_column/sort_direction to sort.
+        Filter operators: exact, contains, less, greater, strictly_less, strictly_greater.
         For large datasets (>1000 rows) requiring full analysis, download_and_parse_resource
         may be more efficient than paginating through many pages.
         """
@@ -59,16 +66,54 @@ def register_query_resource_data_tool(mcp: FastMCP) -> None:
                 ]
             )
 
+            # Show applied filters if any
+            if filter_column and filter_value is not None:
+                content_parts.append(
+                    f"Filter: {filter_column} {filter_operator} {filter_value}"
+                )
+            if sort_column:
+                content_parts.append(f"Sort: {sort_column} ({sort_direction})")
+            if filter_column or sort_column:
+                content_parts.append("")
+
             # Fetch data via the Tabular API (clamp page_size to valid range)
             page_size = max(1, min(page_size, 200))
+
+            # Build filter and sort parameters for Tabular API
+            api_params = {}
+
+            # Add filter if provided
+            if filter_column and filter_value is not None:
+                # Map simple operator names to Tabular API operators
+                operator_map = {
+                    "exact": "exact",
+                    "contains": "contains",
+                    "less": "less",
+                    "greater": "greater",
+                    "strictly_less": "strictly_less",
+                    "strictly_greater": "strictly_greater",
+                }
+                operator = operator_map.get(filter_operator, "exact")
+                param_key = f"{filter_column}__{operator}"
+                api_params[param_key] = filter_value
+
+            # Add sort if provided
+            if sort_column:
+                sort_dir = "desc" if sort_direction.lower() == "desc" else "asc"
+                api_params[f"{sort_column}__sort"] = sort_dir
+
             logger.info(
                 f"Querying Tabular API for resource: {resource_title} "
-                f"(ID: {resource_id}), page: {page}, page_size: {page_size}"
+                f"(ID: {resource_id}), page: {page}, page_size: {page_size}, "
+                f"filters: {api_params}"
             )
 
             try:
                 tabular_data = await tabular_api_client.fetch_resource_data(
-                    resource_id, page=page, page_size=page_size
+                    resource_id,
+                    page=page,
+                    page_size=page_size,
+                    params=api_params if api_params else None,
                 )
                 rows = tabular_data.get("data", [])
                 meta = tabular_data.get("meta", {})
