@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.13 (2026-01-23)
+
+- feat: query_resource_data and download_and_parse_data now returns everything as requested by the LLM
+- feat(query_resource_data): add filtering and sorting parameters
+
+
 ## 0.2.12 (2026-01-23)
 
 - docs: update Cursor .md docs
