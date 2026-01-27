@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.14 (2026-01-27)
+
+- fix: upgrade dependencies to fix security issue related to python-multipart
+
+
 ## 0.2.13 (2026-01-23)
 
 - feat: query_resource_data and download_and_parse_data now returns everything as requested by the LLM
