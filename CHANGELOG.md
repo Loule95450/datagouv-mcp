@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.15 (2026-02-23)
+
+- docs: add disambiguation about dataservices
+- docs: update README
+- feat: add 3 dataservices tools
+
+
 ## 0.2.14 (2026-01-27)
 
 - fix: upgrade dependencies to fix security issue related to python-multipart
