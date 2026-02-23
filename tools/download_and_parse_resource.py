@@ -87,10 +87,10 @@ def register_download_and_parse_resource_tool(mcp: FastMCP) -> None:
                     file_format == "gzip" and "csv" in filename.lower()
                 ):
                     content_parts.append("Format: CSV")
-                    rows = _parse_csv(content, is_gzipped=is_gzipped)
+                    rows = _parse_csv(content, is_gzipped=bool(is_gzipped))
                 elif file_format == "json" or file_format == "jsonl":
                     content_parts.append("Format: JSON/JSONL")
-                    rows = _parse_json(content, is_gzipped=is_gzipped)
+                    rows = _parse_json(content, is_gzipped=bool(is_gzipped))
                 elif file_format == "xlsx":
                     content_parts.append("Format: XLSX")
                     content_parts.append(

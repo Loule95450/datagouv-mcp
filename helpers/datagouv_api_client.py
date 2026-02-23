@@ -135,7 +135,7 @@ async def get_resources_for_dataset(
         base_url: str = env_config.get_base_url("datagouv_api")
         # Fetch resources from API v1
         url = f"{base_url}1/datasets/{dataset_id}/"
-        data = await _fetch_json(session, url)
+        data = await _fetch_json(session, url)  # type: ignore
         resources: list[dict[str, Any]] = data.get("resources", [])
         res_list: list[tuple[str, str]] = [
             (res.get("id"), res.get("title", "") or res.get("name", ""))

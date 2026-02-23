@@ -344,13 +344,16 @@ We welcome contributions! To keep the project stable, we use a standard review-a
 
 ### 🧹 Code Linting and Formatting
 
-This project follows PEP 8 style guidelines using [Ruff](https://astral.sh/ruff/) for linting and formatting.
+This project follows PEP 8 style guidelines using [Ruff](https://astral.sh/ruff/) for linting and formatting, and [ty](https://docs.astral.sh/ty/) for type checking.
 
 **Either running these commands manually or [installing the pre-commit hook](#-pre-commit-hooks) is required before submitting contributions.**
 
 ```shell
-# Lint and sort imports, and format code
-uv run ruff check  --select I --fix && uv run ruff format
+# Lint (including import sorting) and format code
+uv run ruff check --fix && uv run ruff format
+
+# Type check (ty)
+uv run ty check
 ```
 
 ### 🔗 Pre-commit Hooks

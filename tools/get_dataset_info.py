@@ -31,13 +31,11 @@ def register_get_dataset_info_tool(mcp: FastMCP) -> None:
                 content_parts.append("")
                 content_parts.append(f"Description: {data.get('description_short')}")
 
-            if data.get("description") and data.get("description") != data.get(
-                "description_short"
-            ):
+            description = data.get("description")
+            description_short = data.get("description_short")
+            if description and description != description_short:
                 content_parts.append("")
-                content_parts.append(
-                    f"Full description: {data.get('description')[:500]}..."
-                )
+                content_parts.append(f"Full description: {description[:500]}...")
 
             if data.get("organization"):
                 org = data.get("organization", {})
