@@ -3,7 +3,7 @@
 [![CircleCI](https://circleci.com/gh/datagouv/datagouv-mcp.svg?style=svg)](https://circleci.com/gh/datagouv/datagouv-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Model Context Protocol (MCP) server that allows AI chatbots (Claude, Gemini, Cursor, etc.) to search, explore, and analyze datasets from [data.gouv.fr](https://www.data.gouv.fr), the French national Open Data platform, directly through conversation.
+Model Context Protocol (MCP) server that allows AI chatbots (Claude, ChatGPT, Gemini, etc.) to search, explore, and analyze datasets from [data.gouv.fr](https://www.data.gouv.fr), the French national Open Data platform, directly through conversation.
 
 Instead of manually browsing the website, you can simply ask questions like "Quels jeux de données sont disponibles sur les prix de l'immobilier ?" or "Montre-moi les dernières données de population pour Paris" and get instant answers.
 
@@ -19,7 +19,12 @@ The MCP server configuration depends on your client. Use the appropriate configu
 
 ### ChatGPT
 
-To connect an internet-hosted MCP server using ChatGPT Web (paid plans only: Plus/Pro/Team/Enterprise), open ChatGPT in your browser, go to Settings, then Apps and connectors, open Advanced settings, and enable Developer mode; next, return to Settings, open Connectors, select Browse connectors, click Add a new connector, and set the URL to `https://mcp.data.gouv.fr/mcp` then save to activate the connector so its tools become available in ChatGPT.
+*Available for paid plans only (Plus, Pro, Team, and Enterprise).*
+
+1. **Access Settings**: Open ChatGPT in your browser, go to `Settings`, then `Apps and connectors`.
+2. **Enable Dev Mode**: Open `Advanced settings` and enable **Developer mode**.
+3. **Add Connector**: Return to `Settings` > `Connectors` > `Browse connectors` and click **Add a new connector**.
+4. **Configure the connector**: Set the URL to `https://mcp.data.gouv.fr/mcp` and save to activate the tools.
 
 ### Claude Desktop
 
