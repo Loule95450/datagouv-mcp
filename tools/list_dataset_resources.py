@@ -1,4 +1,3 @@
-import httpx
 from mcp.server.fastmcp import FastMCP
 
 from helpers import datagouv_api_client
@@ -67,7 +66,5 @@ def register_list_dataset_resources_tool(mcp: FastMCP) -> None:
 
             return "\n".join(content_parts)
 
-        except httpx.HTTPStatusError as e:
-            return f"Error: HTTP {e.response.status_code} - {str(e)}"
         except Exception as e:  # noqa: BLE001
             return f"Error: {str(e)}"
