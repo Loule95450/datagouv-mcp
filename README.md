@@ -371,7 +371,7 @@ We use a standard review-and-deploy process:
 2. **Review:** All PRs must be reviewed and approved by a maintainer before merging.
 3. **Automated Deployment:** Once merged into `main`, changes will be deployed to:
    1. **[Pre-production](https://mcp.preprod.data.gouv.fr/)** for final validation
-   2. **[Production](https://mcp.data.gouv.fr/**
+   2. **[Production](https://mcp.data.gouv.fr/)**
 
 ### 🧹 Code Linting and Formatting
 
