@@ -138,6 +138,33 @@ Cursor supports MCP servers through its settings. To configure the server:
 }
 ```
 
+### Kiro IDE
+
+Add the following to your Kiro MCP configuration file (`.kiro/settings/mcp.json` in your workspace, or `~/.kiro/settings/mcp.json` for global config):
+
+```json
+{
+  "mcpServers": {
+    "datagouv": {
+      "url": "https://mcp.data.gouv.fr/mcp"
+    }
+  }
+}
+```
+
+### Kiro CLI
+
+Add the following to `~/.kiro/settings/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "datagouv": {
+      "url": "https://mcp.data.gouv.fr/mcp"
+    }
+  }
+}
+
 ### IBM Bob
 
 IBM Bob supports MCP servers through its settings. To configure the server:
