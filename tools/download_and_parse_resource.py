@@ -300,9 +300,9 @@ def _parse_json(content: bytes, is_gzipped: bool = False) -> list[dict[str, Any]
     if is_gzipped:
         content = gzip.decompress(content)
 
-    # Try UTF-8 first, then fall back to Latin-1, then lossy decode as last resort
+    # Try UTF-8 first (with BOM handling), then fall back to Latin-1, then lossy decode as last resort
     text = None
-    for encoding in ("utf-8", "latin-1"):
+    for encoding in ("utf-8-sig", "latin-1"):
         try:
             text = content.decode(encoding)
             break
