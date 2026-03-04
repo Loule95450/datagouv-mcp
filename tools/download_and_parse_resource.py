@@ -156,10 +156,10 @@ def register_download_and_parse_resource_tool(mcp: FastMCP) -> None:
                         val_str = val_str[:100] + "..."
                     content_parts.append(f"    {key}: {val_str}")
 
-            if total_rows == MAX_ROWS_HARD_LIMIT:
+            if total_rows == max_rows:
                 content_parts.append("")
                 content_parts.append(
-                    f"⚠️  Row limit reached ({MAX_ROWS_HARD_LIMIT}). "
+                    f"⚠️  Row limit reached ({max_rows}). "
                     "The file may contain more rows."
                 )
 
