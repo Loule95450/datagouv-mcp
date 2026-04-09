@@ -9,7 +9,7 @@ from helpers.logging import MAIN_LOGGER_NAME
 # Configure Matomo
 MATOMO_URL = os.getenv("MATOMO_URL")
 MATOMO_SITE_ID = os.getenv("MATOMO_SITE_ID")
-MATOMO_AUTH_TOKEN = os.getenv("MATOMO_AUTH")
+MATOMO_AUTH_TOKEN = os.getenv("MATOMO_AUTH_TOKEN")
 
 # Shared client reused across all tracking calls to avoid creating a new
 # TCP connection + SSL handshake + httpx overhead on every MCP request.
