@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.23 (2026-04-09)
+
+- docs(readme): add OpenCode MCP configuration ([#99](https://github.com/datagouv/datagouv-mcp/pull/99))
+- docs(readme): note Windows Claude Desktop built-in Node for MCP ([#90](https://github.com/datagouv/datagouv-mcp/pull/90))
+- fix: fix wrong matomo env var
+
+
 ## 0.2.22 (2026-04-02)
 
 - chore: update dependencies to fix dependabot alerts ([#79](https://github.com/datagouv/datagouv-mcp/pull/79))
