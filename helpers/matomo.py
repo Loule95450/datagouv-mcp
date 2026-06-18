@@ -19,6 +19,7 @@ _request_page_url: ContextVar[str] = ContextVar(
 _request_user_agent: ContextVar[str] = ContextVar(
     "matomo_request_user_agent", default=""
 )
+_request_cip: ContextVar[str] = ContextVar("matomo_request_cip", default="")
 
 # Shared client reused across all tracking calls to avoid creating a new
 # TCP connection + SSL handshake + httpx overhead on every MCP request.
@@ -27,22 +28,26 @@ _client = httpx.AsyncClient(timeout=1.5)
 
 def apply_matomo_request_context(
     headers: dict[str, str], path: str
-) -> tuple[Token[str], Token[str]]:
-    """Bind URL and User-Agent for the current HTTP request (for tool event tracking)."""
+) -> tuple[Token[str], Token[str], Token[str]]:
+    """Bind URL, User-Agent, and client IP for the current HTTP request (for tool event tracking)."""
     host = headers.get("host", "localhost")
     full_url = f"https://{host}{path}"
+    cip = headers.get("x-forwarded-for", "").split(",")[0].strip()
     return (
         _request_page_url.set(full_url),
         _request_user_agent.set(headers.get("user-agent", "")),
+        _request_cip.set(cip),
     )
 
 
 def reset_matomo_request_context(
     url_token: Token[str],
     ua_token: Token[str],
+    cip_token: Token[str],
 ) -> None:
     _request_page_url.reset(url_token)
     _request_user_agent.reset(ua_token)
+    _request_cip.reset(cip_token)
 
 
 async def _post_matomo(payload: dict) -> None:
@@ -94,4 +99,7 @@ async def track_matomo_tool(tool_name: str) -> None:
     }
     if MATOMO_AUTH_TOKEN:
         payload["token_auth"] = MATOMO_AUTH_TOKEN
+        cip = _request_cip.get()
+        if cip:
+            payload["cip"] = cip
     await _post_matomo(payload)
