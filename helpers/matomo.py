@@ -1,7 +1,7 @@
 import logging
 import os
+import random
 from contextvars import ContextVar, Token
-from datetime import UTC, datetime
 
 import httpx
 
@@ -50,9 +50,12 @@ async def _post_matomo(payload: dict) -> None:
     if not MATOMO_URL or not MATOMO_SITE_ID:
         return
     try:
-        await _client.post(f"{MATOMO_URL}/matomo.php", data=payload)
+        resp = await _client.post(f"{MATOMO_URL}/matomo.php", data=payload)
+        resp.raise_for_status()
     except Exception as e:
-        logging.getLogger(MAIN_LOGGER_NAME).error(f"Matomo tracking failed: {e}")
+        logging.getLogger(MAIN_LOGGER_NAME).error(
+            "Matomo tracking failed: %s", e, exc_info=True
+        )
 
 
 async def track_matomo_request(url: str, path: str, headers: dict[str, str]) -> None:
@@ -63,10 +66,14 @@ async def track_matomo_request(url: str, path: str, headers: dict[str, str]) -> 
         "rec": 1,
         "url": url,
         "action_name": f"MCP Request: {path}",
-        "token_auth": MATOMO_AUTH_TOKEN,
         "ua": user_agent,
-        "rand": datetime.now(UTC).timestamp(),
+        "rand": str(random.randint(10**15, 10**16 - 1)),
     }
+    if MATOMO_AUTH_TOKEN:
+        payload["token_auth"] = MATOMO_AUTH_TOKEN
+        cip = headers.get("x-forwarded-for", "").split(",")[0].strip()
+        if cip:
+            payload["cip"] = cip
     await _post_matomo(payload)
 
 
@@ -82,8 +89,9 @@ async def track_matomo_tool(tool_name: str) -> None:
         "ca": 1,
         "e_c": MATOMO_TOOL_EVENT_CATEGORY,
         "e_a": tool_name,
-        "token_auth": MATOMO_AUTH_TOKEN,
         "ua": _request_user_agent.get(),
-        "rand": datetime.now(UTC).timestamp(),
+        "rand": str(random.randint(10**15, 10**16 - 1)),
     }
+    if MATOMO_AUTH_TOKEN:
+        payload["token_auth"] = MATOMO_AUTH_TOKEN
     await _post_matomo(payload)
