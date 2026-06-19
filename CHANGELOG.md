@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.27 (2026-06-19)
+
+- add cip for tool tracking as well
+- chore: upgrade dependencies ([#117](https://github.com/datagouv/datagouv-mcp/pull/117))
+- chore(matomo): try to fix tracking
+- fix lint
+- fix(ci): fix lint check in CI
+- use f-string for error
+
+
 ## 0.2.26 (2026-06-02)
 
 - feat: add sort and last_update_range params to search_datasets ([#113](https://github.com/datagouv/datagouv-mcp/pull/113))
