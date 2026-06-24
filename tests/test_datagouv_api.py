@@ -46,10 +46,10 @@ class TestAsyncFunctions:
         }
         mock_response.raise_for_status = MagicMock()
         mock_client.get = AsyncMock(return_value=mock_response)
-        mock_client.aclose = AsyncMock(return_value=None)
+        mock_client.close = AsyncMock(return_value=None)
 
         with patch(
-            "helpers.datagouv_api_client.httpx.AsyncClient",
+            "helpers.datagouv_api_client.niquests.AsyncSession",
             return_value=mock_client,
         ) as mock_async_client:
             await datagouv_api_client.get_dataset_metadata(
@@ -180,8 +180,8 @@ class TestAsyncFunctions:
         assert "2/datasets/search/" in _args[0]
         assert kwargs["params"] == {
             "q": "IRVE",
-            "page": 2,
-            "page_size": 10,
+            "page": "2",
+            "page_size": "10",
             "sort": "-created",
             "last_update_range": "last_30_days",
         }
@@ -217,10 +217,10 @@ class TestAsyncFunctions:
         }
         mock_response.raise_for_status = MagicMock()
         mock_client.get = AsyncMock(return_value=mock_response)
-        mock_client.aclose = AsyncMock(return_value=None)
+        mock_client.close = AsyncMock(return_value=None)
 
         with patch(
-            "helpers.datagouv_api_client.httpx.AsyncClient",
+            "helpers.datagouv_api_client.niquests.AsyncSession",
             return_value=mock_client,
         ):
             result = await datagouv_api_client.search_datasets("", page_size=1)
@@ -316,8 +316,8 @@ class TestAsyncFunctions:
         args, kwargs = mock_client.get.call_args
         assert "2/organizations/search/" in args[0]
         assert kwargs["params"] == {
-            "page": 2,
-            "page_size": 10,
+            "page": "2",
+            "page_size": "10",
             "q": "insee",
             "sort": "-datasets",
             "badge": "public-service",
@@ -349,7 +349,7 @@ class TestAsyncFunctions:
             session=mock_client,
         )
         _args, kwargs = mock_client.get.call_args
-        assert kwargs["params"] == {"page": 1, "page_size": 15}
+        assert kwargs["params"] == {"page": "1", "page_size": "15"}
         assert "q" not in kwargs["params"]
 
     async def test_search_organizations_basic(self):

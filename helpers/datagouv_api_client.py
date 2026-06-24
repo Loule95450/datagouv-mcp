@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Any
 
-import httpx
+import niquests
 import yaml
 
 from helpers import env_config
@@ -12,26 +12,26 @@ from helpers.user_agent import USER_AGENT
 logger = logging.getLogger(MAIN_LOGGER_NAME)
 
 
-async def _fetch_json(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
+async def _fetch_json(client: niquests.AsyncSession, url: str) -> dict[str, Any]:
     logger.debug("datagouv API GET %s", url)
     try:
         resp = await client.get(url, timeout=15.0)
         resp.raise_for_status()
         return resp.json()
-    except httpx.HTTPError as exc:
+    except niquests.HTTPError as exc:
         logger.error("datagouv API request failed for %s: %s", url, exc)
         raise
 
 
 async def get_resource_details(
-    resource_id: str, session: httpx.AsyncClient | None = None
+    resource_id: str, session: niquests.AsyncSession | None = None
 ) -> dict[str, Any]:
     """
     Fetch the complete resource payload from the API v2 endpoint.
     """
     own = session is None
     if own:
-        session = httpx.AsyncClient(headers={"User-Agent": USER_AGENT})
+        session = niquests.AsyncSession(headers={"User-Agent": USER_AGENT})
     assert session is not None
     try:
         base_url: str = env_config.get_base_url("datagouv_api")
@@ -39,15 +39,15 @@ async def get_resource_details(
         return await _fetch_json(session, url)
     finally:
         if own:
-            await session.aclose()
+            await session.close()
 
 
 async def get_resource_metadata(
-    resource_id: str, session: httpx.AsyncClient | None = None
+    resource_id: str, session: niquests.AsyncSession | None = None
 ) -> dict[str, Any]:
     own = session is None
     if own:
-        session = httpx.AsyncClient(headers={"User-Agent": USER_AGENT})
+        session = niquests.AsyncSession(headers={"User-Agent": USER_AGENT})
     assert session is not None
     try:
         data = await get_resource_details(resource_id, session=session)
@@ -60,18 +60,18 @@ async def get_resource_metadata(
         }
     finally:
         if own:
-            await session.aclose()
+            await session.close()
 
 
 async def get_dataset_details(
-    dataset_id: str, session: httpx.AsyncClient | None = None
+    dataset_id: str, session: niquests.AsyncSession | None = None
 ) -> dict[str, Any]:
     """
     Fetch the complete dataset payload from the API v1 endpoint.
     """
     own = session is None
     if own:
-        session = httpx.AsyncClient(headers={"User-Agent": USER_AGENT})
+        session = niquests.AsyncSession(headers={"User-Agent": USER_AGENT})
     assert session is not None
     try:
         base_url: str = env_config.get_base_url("datagouv_api")
@@ -79,15 +79,15 @@ async def get_dataset_details(
         return await _fetch_json(session, url)
     finally:
         if own:
-            await session.aclose()
+            await session.close()
 
 
 async def get_dataset_metadata(
-    dataset_id: str, session: httpx.AsyncClient | None = None
+    dataset_id: str, session: niquests.AsyncSession | None = None
 ) -> dict[str, Any]:
     own = session is None
     if own:
-        session = httpx.AsyncClient(headers={"User-Agent": USER_AGENT})
+        session = niquests.AsyncSession(headers={"User-Agent": USER_AGENT})
     assert session is not None
     try:
         data = await get_dataset_details(dataset_id, session=session)
@@ -99,15 +99,15 @@ async def get_dataset_metadata(
         }
     finally:
         if own:
-            await session.aclose()
+            await session.close()
 
 
 async def get_resource_and_dataset_metadata(
-    resource_id: str, session: httpx.AsyncClient | None = None
+    resource_id: str, session: niquests.AsyncSession | None = None
 ) -> dict[str, Any]:
     own = session is None
     if own:
-        session = httpx.AsyncClient(headers={"User-Agent": USER_AGENT})
+        session = niquests.AsyncSession(headers={"User-Agent": USER_AGENT})
     try:
         res: dict[str, Any] = await get_resource_metadata(resource_id, session=session)
         ds: dict[str, Any] = {}
@@ -117,11 +117,11 @@ async def get_resource_and_dataset_metadata(
         return {"resource": res, "dataset": ds}
     finally:
         if own and session:
-            await session.aclose()
+            await session.close()
 
 
 async def get_resources_for_dataset(
-    dataset_id: str, session: httpx.AsyncClient | None = None
+    dataset_id: str, session: niquests.AsyncSession | None = None
 ) -> dict[str, Any]:
     """
     Get all resources for a given dataset.
@@ -131,7 +131,7 @@ async def get_resources_for_dataset(
     """
     own = session is None
     if own:
-        session = httpx.AsyncClient(headers={"User-Agent": USER_AGENT})
+        session = niquests.AsyncSession(headers={"User-Agent": USER_AGENT})
     try:
         ds = await get_dataset_metadata(dataset_id, session=session)
         base_url: str = env_config.get_base_url("datagouv_api")
@@ -147,11 +147,11 @@ async def get_resources_for_dataset(
         return {"dataset": ds, "resources": res_list}
     finally:
         if own and session:
-            await session.aclose()
+            await session.close()
 
 
 async def fetch_openapi_spec(
-    url: str, session: httpx.AsyncClient | None = None
+    url: str, session: niquests.AsyncSession | None = None
 ) -> dict[str, Any]:
     """
     Fetch and parse an OpenAPI/Swagger spec from a URL.
@@ -161,18 +161,20 @@ async def fetch_openapi_spec(
         Parsed OpenAPI spec as a dict.
 
     Raises:
-        httpx.HTTPError: If the HTTP request fails.
+        niquests.HTTPError: If the HTTP request fails.
         ValueError: If the response cannot be parsed as JSON or YAML.
     """
     own = session is None
     if own:
-        session = httpx.AsyncClient(headers={"User-Agent": USER_AGENT})
+        session = niquests.AsyncSession(headers={"User-Agent": USER_AGENT})
     assert session is not None
     try:
         logger.debug("Fetching OpenAPI spec from %s", url)
-        resp = await session.get(url, timeout=15.0, follow_redirects=True)
+        resp = await session.get(url, timeout=15.0, allow_redirects=True)
         resp.raise_for_status()
         content = resp.text
+        if content is None:
+            raise ValueError(f"Empty OpenAPI spec response from {url}")
 
         # Try JSON first, then YAML
         try:
@@ -187,18 +189,18 @@ async def fetch_openapi_spec(
         raise ValueError(f"Could not parse OpenAPI spec from {url} as JSON or YAML")
     finally:
         if own:
-            await session.aclose()
+            await session.close()
 
 
 async def get_dataservice_details(
-    dataservice_id: str, session: httpx.AsyncClient | None = None
+    dataservice_id: str, session: niquests.AsyncSession | None = None
 ) -> dict[str, Any]:
     """
     Fetch the full catalog payload for a third-party API from GET /1/dataservices/{id}/.
     """
     own = session is None
     if own:
-        session = httpx.AsyncClient(headers={"User-Agent": USER_AGENT})
+        session = niquests.AsyncSession(headers={"User-Agent": USER_AGENT})
     assert session is not None
     try:
         base_url: str = env_config.get_base_url("datagouv_api")
@@ -206,14 +208,14 @@ async def get_dataservice_details(
         return await _fetch_json(session, url)
     finally:
         if own:
-            await session.aclose()
+            await session.close()
 
 
 async def search_dataservices(
     query: str,
     page: int = 1,
     page_size: int = 20,
-    session: httpx.AsyncClient | None = None,
+    session: niquests.AsyncSession | None = None,
 ) -> dict[str, Any]:
     """
     Search third-party APIs cataloged on data.gouv.fr via GET /2/dataservices/search/.
@@ -228,15 +230,15 @@ async def search_dataservices(
     """
     own = session is None
     if own:
-        session = httpx.AsyncClient(headers={"User-Agent": USER_AGENT})
+        session = niquests.AsyncSession(headers={"User-Agent": USER_AGENT})
     assert session is not None
     try:
         base_url: str = env_config.get_base_url("datagouv_api")
         url = f"{base_url}2/dataservices/search/"
         params = {
             "q": query,
-            "page": page,
-            "page_size": min(page_size, 100),
+            "page": str(page),
+            "page_size": str(min(page_size, 100)),
         }
         resp = await session.get(url, params=params, timeout=15.0)
         resp.raise_for_status()
@@ -270,7 +272,7 @@ async def search_dataservices(
         }
     finally:
         if own:
-            await session.aclose()
+            await session.close()
 
 
 async def search_datasets(
@@ -279,7 +281,7 @@ async def search_datasets(
     page_size: int = 20,
     sort: str | None = None,
     last_update_range: str | None = None,
-    session: httpx.AsyncClient | None = None,
+    session: niquests.AsyncSession | None = None,
 ) -> dict[str, Any]:
     """
     Search for datasets on data.gouv.fr.
@@ -298,16 +300,16 @@ async def search_datasets(
     """
     own = session is None
     if own:
-        session = httpx.AsyncClient(headers={"User-Agent": USER_AGENT})
+        session = niquests.AsyncSession(headers={"User-Agent": USER_AGENT})
     assert session is not None
     try:
         base_url: str = env_config.get_base_url("datagouv_api")
         # Use API v2 for dataset search
         url = f"{base_url}2/datasets/search/"
-        params: dict[str, Any] = {
+        params: dict[str, str] = {
             "q": query,
-            "page": page,
-            "page_size": min(page_size, 100),  # API limit
+            "page": str(page),
+            "page_size": str(min(page_size, 100)),  # API limit
         }
         if sort:
             params["sort"] = sort
@@ -347,7 +349,7 @@ async def search_datasets(
         }
     finally:
         if own:
-            await session.aclose()
+            await session.close()
 
 
 def _organization_metrics_summary(metrics: Any) -> dict[str, Any] | None:
@@ -370,7 +372,7 @@ async def search_organizations(
     badge: str | None = None,
     name: str | None = None,
     business_number_id: str | None = None,
-    session: httpx.AsyncClient | None = None,
+    session: niquests.AsyncSession | None = None,
 ) -> dict[str, Any]:
     """
     List or search publishing organizations on data.gouv.fr.
@@ -393,14 +395,14 @@ async def search_organizations(
     """
     own = session is None
     if own:
-        session = httpx.AsyncClient(headers={"User-Agent": USER_AGENT})
+        session = niquests.AsyncSession(headers={"User-Agent": USER_AGENT})
     assert session is not None
     try:
         base_url: str = env_config.get_base_url("datagouv_api")
         url = f"{base_url}2/organizations/search/"
-        params: dict[str, Any] = {
-            "page": page,
-            "page_size": min(page_size, 100),
+        params: dict[str, str] = {
+            "page": str(page),
+            "page_size": str(min(page_size, 100)),
         }
         if query:
             params["q"] = query
@@ -452,4 +454,4 @@ async def search_organizations(
         }
     finally:
         if own:
-            await session.aclose()
+            await session.close()
